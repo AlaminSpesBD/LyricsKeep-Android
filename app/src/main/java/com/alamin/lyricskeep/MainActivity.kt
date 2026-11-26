@@ -80,6 +80,29 @@ private fun LyricsKeepApp() {
     var currentMs by remember { mutableIntStateOf(0) }
     var showFolders by remember { mutableStateOf(false) }
 
+    // One consistent back action for both Android system back and the in-app back button.
+    val handleBack = {
+        when {
+            showFolders -> showFolders = false
+            showEditor -> showEditor = false
+            preview != null -> {
+                mediaPlayer?.runCatching { stop() }
+                mediaPlayer?.release()
+                mediaPlayer = null
+                isPlaying = false
+                currentMs = 0
+                preview = null
+            }
+            selectedFolder != "All" -> {
+                val parent = selectedFolder.substringBeforeLast("/", "All")
+                selectedFolder = if (parent.isBlank()) "All" else parent
+            }
+        }
+    }
+    BackHandler(enabled = showFolders || showEditor || preview != null || selectedFolder != "All") {
+        handleBack()
+    }
+
     val coverPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) runCatching {
             val dir = File(context.filesDir, "covers").apply { mkdirs() }
@@ -281,7 +304,6 @@ private fun LyricsKeepApp() {
 
         if (preview != null) {
             val item = preview!!
-            BackHandler { mediaPlayer?.release(); mediaPlayer = null; isPlaying = false; preview = null }
             DisposableEffect(item.id) {
                 onDispose { mediaPlayer?.release(); mediaPlayer = null; isPlaying = false }
             }
@@ -294,7 +316,7 @@ private fun LyricsKeepApp() {
             Surface(Modifier.fillMaxSize(), color = Color(0xFFF8F8FB)) {
                 Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 18.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = { preview = null }) { Text("⬅ Back", color = Color(0xFF28334A)) }
+                        TextButton(onClick = { handleBack() }) { Text("⬅ Back", color = Color(0xFF28334A)) }
                         Spacer(Modifier.weight(1f))
                         TextButton(onClick = {
                             editing = item; title = item.title; body = item.body; folder = item.folder
@@ -353,7 +375,7 @@ private fun LyricsKeepApp() {
         }
         if (showEditor) {
             AlertDialog(
-                onDismissRequest = { showEditor = false },
+                onDismissRequest = { handleBack() },
                 title = { Text(if (editing == null) "New lyric" else "Edit lyric") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -386,7 +408,7 @@ private fun LyricsKeepApp() {
             )
         }
         if (showFolders) {
-            AlertDialog(onDismissRequest = { showFolders = false }, title = { Text("Folder & Subfolder manager") },
+            AlertDialog(onDismissRequest = { handleBack() }, title = { Text("Folder & Subfolder manager") },
                 text = { Column(Modifier.fillMaxWidth().heightIn(max = 460.dp).verticalScroll(rememberScrollState())) {
                     Text("Create a main folder or choose a parent to create a subfolder.", color = Color.Gray, fontSize = 12.sp)
                     OutlinedTextField(newFolder, { newFolder = it }, label = { Text("New folder name") }, singleLine = true)
