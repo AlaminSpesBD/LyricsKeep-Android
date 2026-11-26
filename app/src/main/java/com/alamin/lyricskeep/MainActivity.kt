@@ -1,6 +1,11 @@
 package com.alamin.lyricskeep
 
 import android.os.Bundle
+import android.content.Intent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.IntentFilter
+import androidx.core.content.ContextCompat
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Settings
@@ -140,6 +145,36 @@ private fun LyricsKeepApp() {
             context.contentResolver.openInputStream(uri)?.use { input -> dest.outputStream().use { output -> input.copyTo(output) } }
             audioPath = dest.absolutePath
         }
+    }
+
+    fun startTrack(item: Lyric) {
+        val sameFolder = lyrics.filter { it.folder == item.folder && it.audioPath.isNotBlank() }
+        val queue = (if (sameFolder.isNotEmpty()) sameFolder else lyrics.filter { it.audioPath.isNotBlank() })
+        val index = queue.indexOfFirst { it.id == item.id }.coerceAtLeast(0)
+        val intent = Intent(context, LyricsPlaybackService::class.java).apply {
+            action = LyricsPlaybackService.ACTION_PLAY
+            putStringArrayListExtra(LyricsPlaybackService.EXTRA_PATHS, ArrayList(queue.map { it.audioPath }))
+            putStringArrayListExtra(LyricsPlaybackService.EXTRA_TITLES, ArrayList(queue.map { it.title }))
+            putExtra(LyricsPlaybackService.EXTRA_IDS, queue.map { it.id }.toLongArray())
+            putExtra(LyricsPlaybackService.EXTRA_INDEX, index)
+        }
+        ContextCompat.startForegroundService(context, intent)
+        preview = item
+    }
+
+    DisposableEffect(context, lyrics) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
+                if (intent?.action != LyricsPlaybackService.ACTION_STATE) return
+                isPlaying = intent.getBooleanExtra(LyricsPlaybackService.EXTRA_PLAYING, false)
+                durationMs = intent.getIntExtra(LyricsPlaybackService.EXTRA_DURATION, 0)
+                currentMs = intent.getIntExtra(LyricsPlaybackService.EXTRA_POSITION, 0)
+                val id = intent.getLongExtra(LyricsPlaybackService.EXTRA_ID, -1L)
+                lyrics.firstOrNull { it.id == id }?.let { preview = it }
+            }
+        }
+        ContextCompat.registerReceiver(context, receiver, IntentFilter(LyricsPlaybackService.ACTION_STATE), ContextCompat.RECEIVER_NOT_EXPORTED)
+        onDispose { runCatching { context.unregisterReceiver(receiver) } }
     }
 
     fun persistFolders(items: List<String>) {
@@ -387,15 +422,6 @@ private fun LyricsKeepApp() {
 
         if (preview != null) {
             val item = preview!!
-            DisposableEffect(item.id) {
-                onDispose { mediaPlayer?.release(); mediaPlayer = null; isPlaying = false }
-            }
-            LaunchedEffect(isPlaying) {
-                while (isPlaying) {
-                    currentMs = mediaPlayer?.let { runCatching { it.currentPosition }.getOrDefault(0) } ?: 0
-                    kotlinx.coroutines.delay(500)
-                }
-            }
             Surface(Modifier.fillMaxSize(), color = Color(0xFF0A0D0B)) {
                 Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 18.dp)) {
                     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -448,33 +474,20 @@ private fun LyricsKeepApp() {
                                 Box(Modifier.matchParentSize().background(Color(0xD910171C)))
                                 Column(Modifier.padding(horizontal = 16.dp, vertical = 13.dp)) {
                                     Text(item.title, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                                    Slider(value = currentMs.toFloat().coerceIn(0f, durationMs.coerceAtLeast(1).toFloat()), onValueChange = { currentMs = it.toInt() }, onValueChangeFinished = { runCatching { mediaPlayer?.seekTo(currentMs) } }, valueRange = 0f..durationMs.coerceAtLeast(1).toFloat())
+                                    Slider(value = currentMs.toFloat().coerceIn(0f, durationMs.coerceAtLeast(1).toFloat()), onValueChange = { currentMs = it.toInt() }, onValueChangeFinished = {
+                                        context.startService(Intent(context, LyricsPlaybackService::class.java).setAction(LyricsPlaybackService.ACTION_SEEK).putExtra(LyricsPlaybackService.EXTRA_POSITION, currentMs))
+                                    }, valueRange = 0f..durationMs.coerceAtLeast(1).toFloat())
                                     Row {
                                         Text("%d:%02d".format(currentMs/60000,(currentMs/1000)%60), color = Color.White, fontSize = 11.sp)
                                         Spacer(Modifier.weight(1f))
                                         Text("%d:%02d".format(durationMs/60000,(durationMs/1000)%60), color = Color.White, fontSize = 11.sp)
                                     }
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                                        TextButton(onClick = { runCatching { mediaPlayer?.seekTo(0); currentMs = 0 } }) { Text("↶", color = Color.White) }
-                                        TextButton(onClick = { runCatching { mediaPlayer?.seekTo((currentMs-10000).coerceAtLeast(0)) } }) { Text("◀◀", color = Color.White) }
-                                        Button(onClick = {
-                                            runCatching {
-                                                if (mediaPlayer == null) {
-                                                    mediaPlayer = MediaPlayer().apply {
-                                                        setDataSource(item.audioPath)
-                                                        setOnPreparedListener { mp -> durationMs = mp.duration; mp.start(); isPlaying = true }
-                                                        setOnCompletionListener { isPlaying = false; currentMs = 0 }
-                                                        prepareAsync()
-                                                    }
-                                                } else if (isPlaying) {
-                                                    mediaPlayer?.pause(); isPlaying = false
-                                                } else {
-                                                    mediaPlayer?.start(); isPlaying = true
-                                                }
-                                            }
-                                        }) { Text(if (isPlaying) "Ⅱ" else "▶", fontSize = 21.sp) }
-                                        TextButton(onClick = { runCatching { mediaPlayer?.seekTo((currentMs+10000).coerceAtMost(durationMs)) } }) { Text("▶▶", color = Color.White) }
-                                        TextButton(onClick = { runCatching { mediaPlayer?.seekTo(0); currentMs = 0 } }) { Text("🔁", color = Color.White) }
+                                        TextButton(onClick = { context.startService(Intent(context, LyricsPlaybackService::class.java).setAction(LyricsPlaybackService.ACTION_PREVIOUS)) }) { Text("◀◀", color = Color.White) }
+                                        Button(onClick = { context.startService(Intent(context, LyricsPlaybackService::class.java).setAction(LyricsPlaybackService.ACTION_TOGGLE)) }) {
+                                            Text(if (isPlaying) "Ⅱ" else "▶", fontSize = 21.sp)
+                                        }
+                                        TextButton(onClick = { context.startService(Intent(context, LyricsPlaybackService::class.java).setAction(LyricsPlaybackService.ACTION_NEXT)) }) { Text("▶▶", color = Color.White) }
                                     }
                                 }
                             }
