@@ -150,7 +150,7 @@ private fun LyricsKeepApp() {
 
     fun startTrack(item: Lyric) {
         val sameFolder = lyrics.filter { it.folder == item.folder && it.audioPath.isNotBlank() }
-        val queue = (if (sameFolder.isNotEmpty()) sameFolder else lyrics.filter { it.audioPath.isNotBlank() })
+        val queue = (if (sameFolder.size > 1) sameFolder else lyrics.filter { it.audioPath.isNotBlank() })
         val index = queue.indexOfFirst { it.id == item.id }.coerceAtLeast(0)
         val intent = Intent(context, LyricsPlaybackService::class.java).apply {
             action = LyricsPlaybackService.ACTION_PLAY
