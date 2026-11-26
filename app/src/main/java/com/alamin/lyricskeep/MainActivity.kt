@@ -1,6 +1,13 @@
 package com.alamin.lyricskeep
 
 import android.os.Bundle
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.Icons
 import android.media.MediaPlayer
 import android.graphics.BitmapFactory
 import java.io.File
@@ -79,6 +86,15 @@ private fun LyricsKeepApp() {
     var durationMs by remember { mutableIntStateOf(0) }
     var currentMs by remember { mutableIntStateOf(0) }
     var showFolders by remember { mutableStateOf(false) }
+    var activeTab by remember { mutableIntStateOf(0) }
+    var darkMode by remember { mutableStateOf(prefs.getBoolean("dark_mode", true)) }
+    var compactCards by remember { mutableStateOf(prefs.getBoolean("compact_cards", false)) }
+    var showFolderPath by remember { mutableStateOf(prefs.getBoolean("show_folder_path", true)) }
+    var keepScreenOn by remember { mutableStateOf(prefs.getBoolean("keep_screen_on", false)) }
+    var autoBackup by remember { mutableStateOf(prefs.getBoolean("auto_backup", false)) }
+    var fontScale by remember { mutableFloatStateOf(prefs.getFloat("font_scale", 1f)) }
+    var defaultSort by remember { mutableStateOf(prefs.getString("sort_order", "Recently added") ?: "Recently added") }
+    var defaultFolder by remember { mutableStateOf(prefs.getString("default_folder", "General") ?: "General") }
 
     // One consistent back action for both Android system back and the in-app back button.
     val handleBack = {
@@ -213,13 +229,20 @@ private fun LyricsKeepApp() {
         (selectedFolder == "All" || it.folder == selectedFolder) &&
             (it.title.contains(query, true) || it.body.contains(query, true))
     }
-    val bg = Brush.verticalGradient(listOf(Color(0xFF10152B), Color(0xFF171B35), Color(0xFF0B1020)))
+    val pageBg = if (darkMode) Color(0xFF0A0D0B) else Color(0xFFF4F7F4)
+    val pageSurface = if (darkMode) Color(0xFF151D18) else Color.White
+    val pageText = if (darkMode) Color.White else Color(0xFF172019)
+    val pageMuted = if (darkMode) Color(0xFF93A398) else Color(0xFF68766C)
 
-    MaterialTheme(colorScheme = darkColorScheme(
-        primary = Color(0xFF9B8CFF), secondary = Color(0xFF67D9D0),
-        background = Color(0xFF10152B), surface = Color(0xFF202743)
+    MaterialTheme(colorScheme = if (darkMode) darkColorScheme(
+        primary = Color(0xFF1ED760), secondary = Color(0xFF22C55E),
+        background = pageBg, surface = pageSurface, onSurface = pageText
+    ) else lightColorScheme(
+        primary = Color(0xFF159447), secondary = Color(0xFF22C55E),
+        background = pageBg, surface = pageSurface, onSurface = pageText
     )) {
-        Box(Modifier.fillMaxSize().background(bg)) {
+        Box(Modifier.fillMaxSize().background(pageBg)) {
+            if (activeTab == 0) {
             Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp)) {
                 Spacer(Modifier.height(22.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -299,6 +322,24 @@ private fun LyricsKeepApp() {
                 modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(22.dp),
                 containerColor = Color(0xFF9184F5), contentColor = Color.White
             ) { Text("+", fontSize = 28.sp) }
+            } else if (activeTab == 3) {
+                LyricsKeepSettingsScreen(
+                    darkMode = darkMode, onDarkModeChange = { darkMode = it; prefs.edit().putBoolean("dark_mode", it).apply() },
+                    compactCards = compactCards, onCompactCardsChange = { compactCards = it; prefs.edit().putBoolean("compact_cards", it).apply() },
+                    showFolderPath = showFolderPath, onShowFolderPathChange = { showFolderPath = it; prefs.edit().putBoolean("show_folder_path", it).apply() },
+                    keepScreenOn = keepScreenOn, onKeepScreenOnChange = { keepScreenOn = it; prefs.edit().putBoolean("keep_screen_on", it).apply() },
+                    autoBackup = autoBackup, onAutoBackupChange = { autoBackup = it; prefs.edit().putBoolean("auto_backup", it).apply() },
+                    fontScale = fontScale, onFontScaleChange = { fontScale = it; prefs.edit().putFloat("font_scale", it).apply() },
+                    defaultSort = defaultSort, onDefaultSortChange = { defaultSort = it; prefs.edit().putString("sort_order", it).apply() },
+                    defaultFolder = defaultFolder, onDefaultFolderChange = { defaultFolder = it; prefs.edit().putString("default_folder", it).apply() }
+                )
+            } else {
+                LyricsKeepPlaceholderScreen(
+                    title = if (activeTab == 1) "Diary & Notes" else "Later",
+                    subtitle = if (activeTab == 1) "Your personal thoughts and notes will live here." else "A space for upcoming LyricsKeep features."
+                )
+            }
+            LyricsKeepBottomBar(activeTab = activeTab, onTabSelected = { activeTab = it })
         }
 
 
