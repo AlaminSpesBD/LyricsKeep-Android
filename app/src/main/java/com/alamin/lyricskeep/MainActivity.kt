@@ -60,6 +60,29 @@ private fun LyricsKeepApp() {
     var newFolder by remember { mutableStateOf("") }
     var parentFolder by remember { mutableStateOf("Root") }
     var folders by remember { mutableStateOf((runCatching { val a = JSONArray(prefs.getString("folders", "[]")); (0 until a.length()).map { a.getString(it) } }.getOrDefault(emptyList()) + lyrics.map { it.folder } + "General").distinct().sorted()) }
+    var editing by remember { mutableStateOf<Lyric?>(null) }
+    var title by remember { mutableStateOf("") }
+    var body by remember { mutableStateOf("") }
+    var folder by remember { mutableStateOf("General") }
+    var showFolders by remember { mutableStateOf(false) }
+
+    fun persistFolders(items: List<String>) {
+        val a = JSONArray(); items.distinct().sorted().forEach { a.put(it) }
+        prefs.edit().putString("folders", a.toString()).apply(); folders = items.distinct().sorted()
+    }
+
+    fun save(items: List<Lyric>) {
+        val array = JSONArray()
+        items.forEach { item ->
+            array.put(JSONObject().put("id", item.id).put("title", item.title)
+                .put("body", item.body).put("folder", item.folder))
+        }
+        prefs.edit().putString("lyrics", array.toString()).apply()
+        lyrics = items
+        val paths = items.flatMap { l -> l.folder.split("/").filter { it.isNotBlank() }.indices.map { i -> l.folder.split("/").take(i + 1).joinToString("/") } }
+        persistFolders(folders + paths)
+    }
+
     val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri: Uri? ->
         if (uri != null) runCatching {
             val lj = JSONArray()
@@ -101,28 +124,6 @@ private fun LyricsKeepApp() {
             persistFolders(restoredFolders + restored.map { it.folder } + "General")
             selectedFolder = "All"
         }
-    }
-    var editing by remember { mutableStateOf<Lyric?>(null) }
-    var title by remember { mutableStateOf("") }
-    var body by remember { mutableStateOf("") }
-    var folder by remember { mutableStateOf("General") }
-    var showFolders by remember { mutableStateOf(false) }
-
-    fun persistFolders(items: List<String>) {
-        val a = JSONArray(); items.distinct().sorted().forEach { a.put(it) }
-        prefs.edit().putString("folders", a.toString()).apply(); folders = items.distinct().sorted()
-    }
-
-    fun save(items: List<Lyric>) {
-        val array = JSONArray()
-        items.forEach { item ->
-            array.put(JSONObject().put("id", item.id).put("title", item.title)
-                .put("body", item.body).put("folder", item.folder))
-        }
-        prefs.edit().putString("lyrics", array.toString()).apply()
-        lyrics = items
-        val paths = items.flatMap { l -> l.folder.split("/").filter { it.isNotBlank() }.indices.map { i -> l.folder.split("/").take(i + 1).joinToString("/") } }
-        persistFolders(folders + paths)
     }
 
     val folderChoices = listOf("All") + folders
