@@ -18,10 +18,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val KeepGreen = Color(0xFFFF4F9A)
-private val KeepDarkCard = Color(0xFF21151C)
-private val KeepBorder = Color(0xFF553044)
-private val KeepMuted = Color(0xFFB68A9F)
+private val KeepGreen = Color(0xFFDB2777)
+private val KeepDarkCard = Color(0xFFFCEEF2)
+private val KeepBorder = Color(0xFFF3C6D4)
+private val KeepMuted = Color(0xFF946C7B)
 
 @Composable
 fun BoxScope.LyricsKeepBottomBar(activeTab: Int, onTabSelected: (Int) -> Unit) {
@@ -33,16 +33,16 @@ fun BoxScope.LyricsKeepBottomBar(activeTab: Int, onTabSelected: (Int) -> Unit) {
     )
     Surface(
         modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(horizontal = 22.dp, vertical = 12.dp),
-        color = Color(0xFF21151C), shape = RoundedCornerShape(30.dp),
-        border = BorderStroke(1.dp, Color(0xFF2A382E)), shadowElevation = 18.dp
+        color = Color.White, shape = RoundedCornerShape(30.dp),
+        border = BorderStroke(1.dp, Color(0xFFF3C6D4)), shadowElevation = 12.dp
     ) {
         Row(Modifier.padding(horizontal = 9.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
             tabs.forEach { (label, icon, index) ->
                 val selected = activeTab == index
-                Surface(Modifier.height(46.dp).clickable { onTabSelected(index) }, shape = RoundedCornerShape(24.dp), color = if (selected) KeepGreen else Color.Transparent) {
+                Surface(Modifier.height(46.dp).clickable { onTabSelected(index) }, shape = RoundedCornerShape(24.dp), color = if (selected) Color(0xFFDB2777) else Color.Transparent) {
                     Row(Modifier.padding(horizontal = if (selected) 17.dp else 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                        Icon(icon, contentDescription = label, tint = if (selected) Color(0xFF2A1020) else Color(0xFF9BA99F), modifier = Modifier.size(21.dp))
-                        if (selected) { Spacer(Modifier.width(8.dp)); Text(label, color = Color(0xFF2A1020), fontSize = 13.sp, fontWeight = FontWeight.Bold) }
+                        Icon(icon, contentDescription = label, tint = if (selected) Color.White else Color(0xFF946C7B), modifier = Modifier.size(21.dp))
+                        if (selected) { Spacer(Modifier.width(8.dp)); Text(label, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold) }
                     }
                 }
             }
@@ -59,8 +59,8 @@ fun LyricsKeepPlaceholderScreen(title: String, subtitle: String) {
         Spacer(Modifier.height(8.dp))
         Text(subtitle, color = KeepMuted, fontSize = 14.sp)
         Spacer(Modifier.height(18.dp))
-        Surface(color = KeepDarkCard, shape = RoundedCornerShape(18.dp), border = BorderStroke(1.dp, KeepBorder)) {
-            Text("Coming soon", color = KeepGreen, modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp), fontWeight = FontWeight.SemiBold)
+        Surface(color = Color(0xFFFCEEF2), shape = RoundedCornerShape(18.dp), border = BorderStroke(1.dp, KeepBorder) {
+            Text("Coming soon", color = Color(0xFFDB2777), modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp), fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -77,20 +77,21 @@ fun LyricsKeepSettingsScreen(
     lyricsFont: String, onLyricsFontChange: (String) -> Unit,
     folderFont: String, onFolderFontChange: (String) -> Unit,
     defaultSort: String, onDefaultSortChange: (String) -> Unit,
-    defaultFolder: String, onDefaultFolderChange: (String) -> Unit
+    defaultFolder: String, onDefaultFolderChange: (String) -> Unit,
+    onBackup: () -> Unit, onRestore: () -> Unit
 ) {
     var dialog by remember { mutableStateOf<String?>(null) }
-    val titleColor = if (darkMode) Color.White else Color(0xFF172019)
-    val muted = if (darkMode) KeepMuted else Color(0xFF806A76)
+    val titleColor = Color(0xFF351B2A)
+    val muted = Color(0xFF946C7B)
     LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 112.dp), verticalArrangement = Arrangement.spacedBy(17.dp)) {
         item {
             Text("Settings", color = titleColor, fontSize = 29.sp, fontWeight = FontWeight.Bold)
             Text("Make Alamin Lyrics and Keeps yours", color = muted, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
         }
         item {
-            SettingsSectionHeader("PAGE & BEHAVIOR", Icons.Filled.Tune, darkMode)
+            SettingsSectionHeader("PAGE & BEHAVIOR", Icons.Filled.Tune, false)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SettingsToggleCard("Keep screen on", "Prevent screen sleep while reading", Icons.Filled.ScreenLockPortrait, keepScreenOn, onKeepScreenOnChange, darkMode, Modifier.weight(1f))
+                SettingsToggleCard("Keep screen on", "Prevent screen sleep while reading", Icons.Filled.ScreenLockPortrait, keepScreenOn, onKeepScreenOnChange, false, Modifier.weight(1f))
                 SettingsToggleCard("Folder path", "Show folder location on lyric cards", Icons.Filled.FolderOpen, showFolderPath, onShowFolderPathChange, darkMode, Modifier.weight(1f))
             }
             Spacer(Modifier.height(10.dp))
@@ -100,25 +101,30 @@ fun LyricsKeepSettingsScreen(
             }
         }
         item {
-            SettingsSectionHeader("APPEARANCE", Icons.Filled.Palette, darkMode)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SettingsToggleCard("Theme", "Switch between dark and light palettes", if (darkMode) Icons.Filled.DarkMode else Icons.Filled.LightMode, darkMode, onDarkModeChange, darkMode, Modifier.weight(1f))
-                SettingsValueCard("Reading size", "Adjust lyric text size", Icons.Filled.FormatSize, "${(fontScale * 100).toInt()}%", darkMode, Modifier.weight(1f)) { dialog = "font" }
-            }
+            SettingsSectionHeader("APPEARANCE", Icons.Filled.Palette, false)
+            SettingsValueCard("Reading size", "Adjust lyric text size", Icons.Filled.FormatSize, "${(fontScale * 100).toInt()}%", false, Modifier.fillMaxWidth()) { dialog = "font" }
             Spacer(Modifier.height(10.dp))
-            SettingsValueCard("Name font", "Font for lyric titles and names", Icons.Filled.Title, nameFont, darkMode, Modifier.fillMaxWidth()) { dialog = "nameFont" }
+            SettingsValueCard("Name font", "Font for lyric titles and names", Icons.Filled.Title, nameFont, false, Modifier.fillMaxWidth()) { dialog = "nameFont" }
             Spacer(Modifier.height(10.dp))
             SettingsValueCard("Lyrics font", "Font for the lyrics text", Icons.Filled.TextFields, lyricsFont, darkMode, Modifier.fillMaxWidth()) { dialog = "lyricsFont" }
             Spacer(Modifier.height(10.dp))
             SettingsValueCard("Folder font", "Font for folder names and paths", Icons.Filled.Folder, folderFont, darkMode, Modifier.fillMaxWidth()) { dialog = "folderFont" }
         }
         item {
-            SettingsSectionHeader("EDITOR & ENGINE", Icons.Filled.Tune, darkMode)
+            SettingsSectionHeader("EDITOR & ENGINE", Icons.Filled.Tune, false)
             SettingsValueCard("Default sort", "Choose how lyrics are ordered", Icons.Filled.Sort, defaultSort, darkMode, Modifier.fillMaxWidth()) { dialog = "sort" }
             Spacer(Modifier.height(10.dp))
             SettingsValueCard("Default folder", "Choose where new lyrics are saved", Icons.Filled.Folder, defaultFolder, darkMode, Modifier.fillMaxWidth()) { dialog = "folder" }
             Spacer(Modifier.height(10.dp))
-            SettingsValueCard("Backup & restore", "Export or restore your lyrics library", Icons.Filled.FolderZip, "ZIP archive", darkMode, Modifier.fillMaxWidth()) { dialog = "backup" }
+            Surface(color = Color(0xFFFCEEF2), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Color(0xFFF3C6D4))) {
+                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Filled.FolderZip, contentDescription = null, tint = Color(0xFFDB2777)); Spacer(Modifier.width(10.dp)); Column { Text("Backup & restore", color = Color(0xFF351B2A), fontWeight = FontWeight.Bold, fontSize = 14.sp); Text("Export or restore your lyrics library", color = Color(0xFF946C7B), fontSize = 11.sp) } }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(onClick = onBackup, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDB2777), contentColor = Color.White)) { Text("Backup") }
+                        OutlinedButton(onClick = onRestore, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFDB2777)), border = BorderStroke(1.dp, Color(0xFFF3C6D4))) { Text("Restore") }
+                    }
+                }
+            }
         }
         item {
             Text("ALAMIN LYRICS AND KEEPS", color = muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
@@ -138,7 +144,6 @@ fun LyricsKeepSettingsScreen(
         "folderFont" -> ChoiceDialog("Folder font", listOf("Sans Serif", "Serif", "Monospace", "Cursive"), folderFont, { onFolderFontChange(it); dialog = null }) { dialog = null }
         "sort" -> ChoiceDialog("Default sort", listOf("Recently added", "Title A–Z", "Title Z–A", "Folder"), defaultSort, { onDefaultSortChange(it); dialog = null }) { dialog = null }
         "folder" -> ChoiceDialog("Default folder", listOf("General", "Favorites", "Unsorted"), defaultFolder, { onDefaultFolderChange(it); dialog = null }) { dialog = null }
-        "backup" -> AlertDialog(onDismissRequest = { dialog = null }, title = { Text("Backup & restore") }, text = { Text("Use Backup and Restore from the Lyrics tab to export or import a ZIP archive.") }, confirmButton = { TextButton(onClick = { dialog = null }) { Text("Got it") } })
     }
 }
 
@@ -147,23 +152,23 @@ private fun SettingsSectionHeader(label: String, icon: ImageVector, dark: Boolea
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 10.dp)) {
         Icon(icon, contentDescription = null, tint = KeepGreen, modifier = Modifier.size(17.dp))
         Spacer(Modifier.width(8.dp))
-        Text(label, color = if (dark) Color(0xFF9AAC9F) else Color(0xFF806A76), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        Text(label, color = Color(0xFF946C7B), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
     }
 }
 
 @Composable
 private fun SettingsToggleCard(title: String, description: String, icon: ImageVector, checked: Boolean, onCheckedChange: (Boolean) -> Unit, dark: Boolean, modifier: Modifier = Modifier) {
-    val card = if (dark) KeepDarkCard else Color.White
-    val text = if (dark) Color.White else Color(0xFF172019)
-    val muted = if (dark) KeepMuted else Color(0xFF806A76)
-    Surface(modifier.heightIn(min = 150.dp).clickable { onCheckedChange(!checked) }, shape = RoundedCornerShape(16.dp), color = card, border = BorderStroke(1.dp, if (checked) Color(0x88FF4F9A) else if (dark) KeepBorder else Color(0xFFFFC5DC))) {
+    val card = Color(0xFFFCEEF2)
+    val text = Color(0xFF351B2A)
+    val muted = Color(0xFF946C7B)
+    Surface(modifier.heightIn(min = 150.dp).clickable { onCheckedChange(!checked) }, shape = RoundedCornerShape(16.dp), color = card, border = BorderStroke(1.dp, if (checked) Color(0x88FF4F9A) else Color(0xFFF3C6D4))) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = RoundedCornerShape(10.dp), color = if (checked) Color(0x22FF4F9A) else if (dark) Color(0xFF351B2A) else Color(0xFFFFE3EF)) {
+                Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFFFE3EF)) {
                     Icon(icon, contentDescription = null, tint = if (checked) KeepGreen else muted, modifier = Modifier.padding(8.dp).size(17.dp))
                 }
                 Spacer(Modifier.weight(1f))
-                Switch(checked = checked, onCheckedChange = onCheckedChange, modifier = Modifier.height(30.dp), colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF2A1020), checkedTrackColor = KeepGreen))
+                Switch(checked = checked, onCheckedChange = onCheckedChange, modifier = Modifier.height(30.dp), colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFFDB2777)))
             }
             Spacer(Modifier.height(9.dp))
             Text(title, color = text, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -180,7 +185,7 @@ private fun SettingsValueCard(title: String, description: String, icon: ImageVec
     val muted = if (dark) KeepMuted else Color(0xFF806A76)
     Surface(modifier = modifier.clickable(onClick = onClick), shape = RoundedCornerShape(16.dp), color = card, border = BorderStroke(1.dp, if (dark) KeepBorder else Color(0xFFFFC5DC))) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = RoundedCornerShape(11.dp), color = if (dark) Color(0xFF351B2A) else Color(0xFFFFE3EF)) {
+            Surface(shape = RoundedCornerShape(11.dp), color = Color(0xFFFFE3EF)) {
                 Icon(icon, contentDescription = null, tint = KeepGreen, modifier = Modifier.padding(10.dp).size(19.dp))
             }
             Spacer(Modifier.width(12.dp))
