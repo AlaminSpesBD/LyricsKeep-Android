@@ -14,6 +14,7 @@ import java.io.File
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import android.net.Uri
@@ -367,47 +368,64 @@ private fun LyricsKeepApp() {
                         }) { Text("✎ Edit") }
                     }
                     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (item.coverPath.isNotBlank()) {
-                            val bitmap = remember(item.coverPath) { runCatching { BitmapFactory.decodeFile(item.coverPath)?.asImageBitmap() }.getOrNull() }
-                            bitmap?.let { Image(bitmap = it, contentDescription = "Cover image", modifier = Modifier.fillMaxWidth().heightIn(max = 230.dp), contentScale = ContentScale.Fit) }
-                            Spacer(Modifier.height(14.dp))
-                        }
                         Text(item.title, color = Color(0xFF202333), fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                         Text("📁 " + item.folder, color = Color.Gray, fontSize = 13.sp, modifier = Modifier.padding(8.dp))
                         Divider(Modifier.padding(vertical = 12.dp))
                         Text(item.body, color = Color(0xFF25252B), fontSize = 21.sp, lineHeight = 38.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 28.dp))
                     }
                     if (item.audioPath.isNotBlank()) {
-                        Surface(Modifier.fillMaxWidth().padding(bottom = 12.dp), shape = RoundedCornerShape(24.dp), color = Color(0xFF26324A), shadowElevation = 8.dp) {
-                            Column(Modifier.padding(15.dp)) {
-                                Text(item.title, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                                Slider(value = currentMs.toFloat().coerceIn(0f, durationMs.coerceAtLeast(1).toFloat()), onValueChange = { currentMs = it.toInt() }, onValueChangeFinished = { runCatching { mediaPlayer?.seekTo(currentMs) } }, valueRange = 0f..durationMs.coerceAtLeast(1).toFloat())
-                                Row {
-                                    Text("%d:%02d".format(currentMs/60000,(currentMs/1000)%60), color = Color.White, fontSize = 11.sp)
-                                    Spacer(Modifier.weight(1f))
-                                    Text("%d:%02d".format(durationMs/60000,(durationMs/1000)%60), color = Color.White, fontSize = 11.sp)
+                        val playerCover = remember(item.coverPath) {
+                            if (item.coverPath.isNotBlank()) runCatching {
+                                BitmapFactory.decodeFile(item.coverPath)?.asImageBitmap()
+                            }.getOrNull() else null
+                        }
+                        Surface(
+                            Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color(0xFF18231D),
+                            shadowElevation = 10.dp
+                        ) {
+                            Box(Modifier.fillMaxWidth().heightIn(min = 172.dp).clip(RoundedCornerShape(24.dp))) {
+                                // The cover becomes a soft, blurred glass backdrop instead of a large image above the reader.
+                                playerCover?.let { cover ->
+                                    Image(
+                                        bitmap = cover,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxWidth().height(210.dp).blur(26.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
                                 }
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                                    TextButton(onClick = { runCatching { mediaPlayer?.seekTo(0); currentMs = 0 } }) { Text("↶", color = Color.White) }
-                                    TextButton(onClick = { runCatching { mediaPlayer?.seekTo((currentMs-10000).coerceAtLeast(0)) } }) { Text("◀◀", color = Color.White) }
-                                    Button(onClick = {
-                                        runCatching {
-                                            if (mediaPlayer == null) {
-                                                mediaPlayer = MediaPlayer().apply {
-                                                    setDataSource(item.audioPath)
-                                                    setOnPreparedListener { mp -> durationMs = mp.duration; mp.start(); isPlaying = true }
-                                                    setOnCompletionListener { isPlaying = false; currentMs = 0 }
-                                                    prepareAsync()
+                                Box(Modifier.matchParentSize().background(Color(0xD910171C)))
+                                Column(Modifier.padding(horizontal = 16.dp, vertical = 13.dp)) {
+                                    Text(item.title, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                    Slider(value = currentMs.toFloat().coerceIn(0f, durationMs.coerceAtLeast(1).toFloat()), onValueChange = { currentMs = it.toInt() }, onValueChangeFinished = { runCatching { mediaPlayer?.seekTo(currentMs) } }, valueRange = 0f..durationMs.coerceAtLeast(1).toFloat())
+                                    Row {
+                                        Text("%d:%02d".format(currentMs/60000,(currentMs/1000)%60), color = Color.White, fontSize = 11.sp)
+                                        Spacer(Modifier.weight(1f))
+                                        Text("%d:%02d".format(durationMs/60000,(durationMs/1000)%60), color = Color.White, fontSize = 11.sp)
+                                    }
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                                        TextButton(onClick = { runCatching { mediaPlayer?.seekTo(0); currentMs = 0 } }) { Text("↶", color = Color.White) }
+                                        TextButton(onClick = { runCatching { mediaPlayer?.seekTo((currentMs-10000).coerceAtLeast(0)) } }) { Text("◀◀", color = Color.White) }
+                                        Button(onClick = {
+                                            runCatching {
+                                                if (mediaPlayer == null) {
+                                                    mediaPlayer = MediaPlayer().apply {
+                                                        setDataSource(item.audioPath)
+                                                        setOnPreparedListener { mp -> durationMs = mp.duration; mp.start(); isPlaying = true }
+                                                        setOnCompletionListener { isPlaying = false; currentMs = 0 }
+                                                        prepareAsync()
+                                                    }
+                                                } else if (isPlaying) {
+                                                    mediaPlayer?.pause(); isPlaying = false
+                                                } else {
+                                                    mediaPlayer?.start(); isPlaying = true
                                                 }
-                                            } else if (isPlaying) {
-                                                mediaPlayer?.pause(); isPlaying = false
-                                            } else {
-                                                mediaPlayer?.start(); isPlaying = true
                                             }
-                                        }
-                                    }) { Text(if (isPlaying) "Ⅱ" else "▶", fontSize = 21.sp) }
-                                    TextButton(onClick = { runCatching { mediaPlayer?.seekTo((currentMs+10000).coerceAtMost(durationMs)) } }) { Text("▶▶", color = Color.White) }
-                                    TextButton(onClick = { runCatching { mediaPlayer?.seekTo(0); currentMs = 0 } }) { Text("🔁", color = Color.White) }
+                                        }) { Text(if (isPlaying) "Ⅱ" else "▶", fontSize = 21.sp) }
+                                        TextButton(onClick = { runCatching { mediaPlayer?.seekTo((currentMs+10000).coerceAtMost(durationMs)) } }) { Text("▶▶", color = Color.White) }
+                                        TextButton(onClick = { runCatching { mediaPlayer?.seekTo(0); currentMs = 0 } }) { Text("🔁", color = Color.White) }
+                                    }
                                 }
                             }
                         }
