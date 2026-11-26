@@ -335,7 +335,7 @@ private fun LyricsKeepApp() {
                         Text(if (selectedFolder == "All") "ALL LOCATIONS" else selectedFolder.substringAfterLast("/").uppercase(),
                             color = Color(0xFF9AAC9F), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
                         Text(if (selectedFolder == "All") "Browse your library" else "📁 " + selectedFolder,
-                            color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                            color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, fontFamily = keepFontFamily(folderFont))
                     }
                     if (selectedFolder != "All") {
                         TextButton(onClick = { selectedFolder = selectedFolder.substringBeforeLast("/", "All").ifBlank { "All" } }) {
@@ -387,7 +387,7 @@ private fun LyricsKeepApp() {
                                 Column(Modifier.padding(17.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(item.title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, fontFamily = keepFontFamily(nameFont), modifier = Modifier.weight(1f))
-                                        Text(item.folder, color = Color(0xFF8EE7A8), fontSize = 11.sp)
+                                        Text(item.folder, color = Color(0xFF8EE7A8), fontSize = 11.sp, fontFamily = keepFontFamily(folderFont))
                                     }
                                     Spacer(Modifier.height(7.dp))
                                     Text(item.body, color = Color(0xFFB8C0D8), maxLines = 3, fontSize = 13.sp, lineHeight = 19.sp, fontFamily = keepFontFamily(lyricsFont))
