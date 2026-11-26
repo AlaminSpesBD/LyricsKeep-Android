@@ -438,6 +438,7 @@ private fun LyricsKeepApp() {
 
         if (preview == null && currentTrackId != -1L && durationMs > 0) {
             val playingItem = lyrics.firstOrNull { it.id == currentTrackId }
+            Box(Modifier.fillMaxSize()) {
             Surface(Modifier.align(Alignment.BottomCenter).padding(bottom = 88.dp, start = 14.dp, end = 14.dp).fillMaxWidth()
                 .clickable { playingItem?.let { preview = it } },
                 color = Color(0xFF17251C), shape = RoundedCornerShape(20.dp),
@@ -451,6 +452,7 @@ private fun LyricsKeepApp() {
                     IconButton(onClick = { context.startService(Intent(context, LyricsPlaybackService::class.java).setAction(LyricsPlaybackService.ACTION_TOGGLE)) }) { Text(if (isPlaying) "Ⅱ" else "▶", color = Color(0xFF1ED760), fontSize = 20.sp) }
                     IconButton(onClick = { context.startService(Intent(context, LyricsPlaybackService::class.java).setAction(LyricsPlaybackService.ACTION_NEXT)) }) { Text("▶", color = Color.White) }
                 }
+            }
             }
         }
         if (preview != null) {
