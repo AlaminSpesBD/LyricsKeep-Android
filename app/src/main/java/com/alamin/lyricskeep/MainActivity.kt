@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,11 +50,20 @@ private fun LyricsKeepApp() {
     var query by remember { mutableStateOf("") }
     var selectedFolder by remember { mutableStateOf("All") }
     var showEditor by remember { mutableStateOf(false) }
+    var preview by remember { mutableStateOf<Lyric?>(null) }
+    var newFolder by remember { mutableStateOf("") }
+    var parentFolder by remember { mutableStateOf("Root") }
+    var folders by remember { mutableStateOf((runCatching { val a = JSONArray(prefs.getString("folders", "[]")); (0 until a.length()).map { a.getString(it) } }.getOrDefault(emptyList()) + lyrics.map { it.folder } + "General").distinct().sorted()) }
     var editing by remember { mutableStateOf<Lyric?>(null) }
     var title by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
     var folder by remember { mutableStateOf("General") }
     var showFolders by remember { mutableStateOf(false) }
+
+    fun persistFolders(items: List<String>) {
+        val a = JSONArray(); items.distinct().sorted().forEach { a.put(it) }
+        prefs.edit().putString("folders", a.toString()).apply(); folders = items.distinct().sorted()
+    }
 
     fun save(items: List<Lyric>) {
         val array = JSONArray()
@@ -62,9 +73,11 @@ private fun LyricsKeepApp() {
         }
         prefs.edit().putString("lyrics", array.toString()).apply()
         lyrics = items
+        val paths = items.flatMap { l -> l.folder.split("/").filter { it.isNotBlank() }.indices.map { i -> l.folder.split("/").take(i + 1).joinToString("/") } }
+        persistFolders(folders + paths)
     }
 
-    val folders = listOf("All") + lyrics.map { it.folder }.filter { it.isNotBlank() }.distinct().sorted()
+    val folderChoices = listOf("All") + folders
     val visible = lyrics.filter {
         (selectedFolder == "All" || it.folder == selectedFolder) &&
             (it.title.contains(query, true) || it.body.contains(query, true))
@@ -106,7 +119,7 @@ private fun LyricsKeepApp() {
                     TextButton(onClick = { showFolders = true }) { Text("+ Folder") }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    folders.take(4).forEach { name ->
+                    folderChoices.take(5).forEach { name ->
                         FilterChip(selected = selectedFolder == name, onClick = { selectedFolder = name },
                             label = { Text(name) })
                     }
@@ -129,9 +142,7 @@ private fun LyricsKeepApp() {
                     LazyColumn(contentPadding = PaddingValues(bottom = 100.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(visible, key = { it.id }) { item ->
                             Surface(
-                                modifier = Modifier.fillMaxWidth().clickable {
-                                    editing = item; title = item.title; body = item.body; folder = item.folder; showEditor = true
-                                },
+                                modifier = Modifier.fillMaxWidth().clickable { preview = item },
                                 shape = RoundedCornerShape(20.dp), color = Color(0xCC252D4A),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x334F5C88))
                             ) {
@@ -155,6 +166,20 @@ private fun LyricsKeepApp() {
             ) { Text("+", fontSize = 28.sp) }
         }
 
+        if (preview != null) {
+            val item = preview!!
+            AlertDialog(onDismissRequest = { preview = null }, title = { Text(item.title) },
+                text = { Column(Modifier.fillMaxWidth().heightIn(max = 480.dp).verticalScroll(rememberScrollState())) {
+                    Text(item.folder, color = Color(0xFF9B8CFF), fontSize = 12.sp)
+                    Spacer(Modifier.height(10.dp))
+                    Text(item.body, color = Color.White, fontSize = 15.sp, lineHeight = 25.sp)
+                } },
+                confirmButton = { TextButton(onClick = {
+                    editing = item; title = item.title; body = item.body; folder = item.folder
+                    preview = null; showEditor = true
+                }) { Text("Edit") } },
+                dismissButton = { TextButton(onClick = { preview = null }) { Text("Close") } })
+        }
         if (showEditor) {
             AlertDialog(
                 onDismissRequest = { showEditor = false },
@@ -162,7 +187,7 @@ private fun LyricsKeepApp() {
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         OutlinedTextField(title, { title = it }, label = { Text("Title") }, singleLine = true)
-                        OutlinedTextField(folder, { folder = it }, label = { Text("Folder") }, singleLine = true)
+                        OutlinedTextField(folder, { folder = it }, label = { Text("Folder / Subfolder") }, singleLine = true, supportingText = { Text("Use / between levels, e.g. Songs/Old songs") })
                         OutlinedTextField(body, { body = it }, label = { Text("Lyrics") }, minLines = 5)
                     }
                 },
@@ -170,6 +195,8 @@ private fun LyricsKeepApp() {
                     TextButton(onClick = {
                         if (title.isNotBlank() && body.isNotBlank()) {
                             val item = Lyric(editing?.id ?: System.currentTimeMillis(), title.trim(), body.trim(), folder.trim().ifBlank { "General" })
+                            val parts = item.folder.split("/").filter { it.isNotBlank() }
+                            persistFolders(folders + parts.indices.map { i -> parts.take(i + 1).joinToString("/") })
                             save(if (editing == null) listOf(item) + lyrics else lyrics.map { if (it.id == item.id) item else it })
                             showEditor = false
                         }
@@ -184,17 +211,41 @@ private fun LyricsKeepApp() {
             )
         }
         if (showFolders) {
-            var newFolder by remember { mutableStateOf("") }
-            AlertDialog(
-                onDismissRequest = { showFolders = false },
-                title = { Text("Create folder") },
-                text = { OutlinedTextField(newFolder, { newFolder = it }, label = { Text("Folder name") }, singleLine = true) },
-                confirmButton = { TextButton(onClick = {
-                    if (newFolder.isNotBlank()) selectedFolder = newFolder.trim()
-                    showFolders = false
-                }) { Text("Done") } },
-                dismissButton = { TextButton(onClick = { showFolders = false }) { Text("Cancel") } }
-            )
+            AlertDialog(onDismissRequest = { showFolders = false }, title = { Text("Folder & Subfolder manager") },
+                text = { Column(Modifier.fillMaxWidth().heightIn(max = 460.dp).verticalScroll(rememberScrollState())) {
+                    Text("Create a main folder or choose a parent to create a subfolder.", color = Color.Gray, fontSize = 12.sp)
+                    OutlinedTextField(newFolder, { newFolder = it }, label = { Text("New folder name") }, singleLine = true)
+                    var expanded by remember { mutableStateOf(false) }
+                    Box {
+                        OutlinedTextField(parentFolder, {}, readOnly = true, label = { Text("Parent folder") },
+                            modifier = Modifier.fillMaxWidth().clickable { expanded = true })
+                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                            DropdownMenuItem(text = { Text("Root folder") }, onClick = { parentFolder = "Root"; expanded = false })
+                            folders.forEach { f -> DropdownMenuItem(text = { Text(f) }, onClick = { parentFolder = f; expanded = false }) }
+                        }
+                    }
+                    Button(onClick = {
+                        val name = newFolder.trim().trim('/')
+                        if (name.isNotBlank()) {
+                            val path = if (parentFolder == "Root") name else "$parentFolder/$name"
+                            persistFolders(folders + path); selectedFolder = path; newFolder = ""; parentFolder = "Root"
+                        }
+                    }, modifier = Modifier.fillMaxWidth()) { Text("Create folder") }
+                    Divider()
+                    Text("Folders", fontWeight = FontWeight.Bold)
+                    folders.forEach { f ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(f, color = Color.White, modifier = Modifier.weight(1f), fontSize = 13.sp)
+                            TextButton(onClick = { selectedFolder = f; showFolders = false }) { Text("Open") }
+                            TextButton(onClick = {
+                                save(lyrics.map { if (it.folder == f || it.folder.startsWith("$f/")) it.copy(folder = "General") else it })
+                                persistFolders(folders.filterNot { it == f || it.startsWith("$f/") } + "General")
+                            }) { Text("Delete") }
+                        }
+                    }
+                } },
+                confirmButton = { TextButton(onClick = { showFolders = false }) { Text("Done") } })
         }
+
     }
 }
