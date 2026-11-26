@@ -1,9 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:allowBackup="true"
         android:label="Lyrics Keep"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
+        <service android:name=".LyricsPlaybackService" android:exported="false" android:foregroundServiceType="mediaPlayback" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
