@@ -1,6 +1,12 @@
 package com.alamin.lyricskeep
 
 import android.os.Bundle
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -54,6 +60,48 @@ private fun LyricsKeepApp() {
     var newFolder by remember { mutableStateOf("") }
     var parentFolder by remember { mutableStateOf("Root") }
     var folders by remember { mutableStateOf((runCatching { val a = JSONArray(prefs.getString("folders", "[]")); (0 until a.length()).map { a.getString(it) } }.getOrDefault(emptyList()) + lyrics.map { it.folder } + "General").distinct().sorted()) }
+    val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri: Uri? ->
+        if (uri != null) runCatching {
+            val lj = JSONArray()
+            lyrics.forEach { lj.put(JSONObject().put("id", it.id).put("title", it.title).put("body", it.body).put("folder", it.folder)) }
+            val fj = JSONArray()
+            folders.forEach { fj.put(it) }
+            context.contentResolver.openOutputStream(uri)?.use { output ->
+                ZipOutputStream(output).use { zip ->
+                    zip.putNextEntry(ZipEntry("lyrics.json"))
+                    zip.write(lj.toString().toByteArray(Charsets.UTF_8)); zip.closeEntry()
+                    zip.putNextEntry(ZipEntry("folders.json"))
+                    zip.write(fj.toString().toByteArray(Charsets.UTF_8)); zip.closeEntry()
+                }
+            }
+        }
+    }
+    val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) runCatching {
+            var lj = "[]"; var fj = "[]"
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                ZipInputStream(input).use { zip ->
+                    while (true) {
+                        val entry = zip.nextEntry ?: break
+                        val value = zip.readBytes().toString(Charsets.UTF_8)
+                        if (entry.name == "lyrics.json") lj = value
+                        if (entry.name == "folders.json") fj = value
+                        zip.closeEntry()
+                    }
+                }
+            }
+            val a = JSONArray(lj)
+            val restored = (0 until a.length()).map { i ->
+                val o = a.getJSONObject(i)
+                Lyric(o.optLong("id"), o.optString("title"), o.optString("body"), o.optString("folder", "General"))
+            }
+            val fa = JSONArray(fj)
+            val restoredFolders = (0 until fa.length()).map { fa.getString(it) }
+            save(restored)
+            persistFolders(restoredFolders + restored.map { it.folder } + "General")
+            selectedFolder = "All"
+        }
+    }
     var editing by remember { mutableStateOf<Lyric?>(null) }
     var title by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
@@ -114,6 +162,10 @@ private fun LyricsKeepApp() {
                     )
                 )
                 Spacer(Modifier.height(14.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { backupLauncher.launch("LyricsKeep-Backup.zip") }) { Text("Backup") }
+                    TextButton(onClick = { restoreLauncher.launch(arrayOf("application/zip", "application/octet-stream")) }) { Text("Restore") }
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("FOLDERS", color = Color(0xFF9AA5C4), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp, modifier = Modifier.weight(1f))
                     TextButton(onClick = { showFolders = true }) { Text("+ Folder") }
