@@ -15,6 +15,9 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.Icons
 import android.media.MediaPlayer
 import android.graphics.BitmapFactory
@@ -353,7 +356,7 @@ private fun LyricsKeepApp() {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("♪", fontSize = 42.sp, color = Color(0xFFFF4F9A))
-                            Text(if (query.isEmpty()) "No lyrics yet" else "No matching lyrics", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                            Text(if (query.isEmpty()) "No lyrics yet" else "No matching lyrics", color = pageText, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                             Text("Tap + to save your first lyric", color = Color(0xFF946C7B), fontSize = 13.sp)
                         }
                     }
@@ -440,11 +443,11 @@ private fun LyricsKeepApp() {
             Surface(Modifier.fillMaxSize(), color = Color(0xFFFFF8FA)) {
                 Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 18.dp)) {
                     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(Modifier.clickable { handleBack() }, color = Color(0xCC351B2A), shape = RoundedCornerShape(18.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x77FF4F9A))) {
+                        Surface(Modifier.clickable { handleBack() }, color = Color(0xFFFCEEF2), shape = RoundedCornerShape(18.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF3C6D4))) {
                             Row(Modifier.padding(horizontal = 15.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text("‹", color = Color(0xFFFF8DBD), fontSize = 22.sp)
-                                Spacer(Modifier.width(5.dp)); Text("Back", color = Color.White, fontWeight = FontWeight.SemiBold)
+                                Text("‹", color = Color(0xFFDB2777), fontSize = 22.sp)
+                                Spacer(Modifier.width(5.dp)); Text("Back", color = Color(0xFF351B2A), fontWeight = FontWeight.SemiBold)
                             }
                         }
                         Spacer(Modifier.weight(1f))
@@ -455,12 +458,12 @@ private fun LyricsKeepApp() {
                         }, color = Color(0xCC351B2A), shape = RoundedCornerShape(18.dp),
                             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x77FF4F9A))) {
                             Text("✎  Edit", Modifier.padding(horizontal = 16.dp, vertical = 11.dp),
-                                color = Color(0xFFFF8DBD), fontWeight = FontWeight.SemiBold)
+                                color = Color(0xFFDB2777), fontWeight = FontWeight.SemiBold)
                         }
                     }
                     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(item.title, color = Color(0xFF351B2A), fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, fontFamily = keepFontFamily(nameFont))
-                        Text("📁 " + item.folder, color = Color(0xFFB68A9F), fontSize = 13.sp, fontFamily = keepFontFamily(folderFont), modifier = Modifier.padding(8.dp))
+                        Text("📁 " + item.folder, color = Color(0xFF946C7B), fontSize = 13.sp, fontFamily = keepFontFamily(folderFont), modifier = Modifier.padding(8.dp))
                         Divider(Modifier.padding(vertical = 12.dp))
                         Text(item.body, color = Color(0xFF684354), fontSize = 21.sp, lineHeight = 38.sp, textAlign = TextAlign.Center, fontFamily = keepFontFamily(lyricsFont), modifier = Modifier.fillMaxWidth().padding(bottom = 28.dp))
                     }
