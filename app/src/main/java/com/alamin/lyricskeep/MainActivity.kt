@@ -376,11 +376,10 @@ private fun LyricsKeepApp() {
                     defaultSort = defaultSort, onDefaultSortChange = { defaultSort = it; prefs.edit().putString("sort_order", it).apply() },
                     defaultFolder = defaultFolder, onDefaultFolderChange = { defaultFolder = it; prefs.edit().putString("default_folder", it).apply() }
                 )
+            } else if (activeTab == 1) {
+                LyricsKeepDiaryNotesScreen()
             } else {
-                LyricsKeepPlaceholderScreen(
-                    title = if (activeTab == 1) "Diary & Notes" else "Later",
-                    subtitle = if (activeTab == 1) "Your personal thoughts and notes will live here." else "A space for upcoming LyricsKeep features."
-                )
+                LyricsKeepPlaceholderScreen(title = "Later", subtitle = "A space for upcoming LyricsKeep features.")
             }
             LyricsKeepBottomBar(activeTab = activeTab, onTabSelected = { activeTab = it })
         }
