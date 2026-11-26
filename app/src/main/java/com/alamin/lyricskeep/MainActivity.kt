@@ -1,6 +1,9 @@
 package com.alamin.lyricskeep
 
 import android.os.Bundle
+import android.os.Build
+import android.Manifest
+import android.content.pm.PackageManager
 import android.content.Intent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -148,9 +151,10 @@ private fun LyricsKeepApp() {
         }
     }
 
-    fun startTrack(item: Lyric) {
+    var pendingTrack by remember { mutableStateOf<Lyric?>(null) }
+    fun startTrackNow(item: Lyric) {
         val sameFolder = lyrics.filter { it.folder == item.folder && it.audioPath.isNotBlank() }
-        val queue = (if (sameFolder.size > 1) sameFolder else lyrics.filter { it.audioPath.isNotBlank() })
+        val queue = if (sameFolder.size > 1) sameFolder else lyrics.filter { it.audioPath.isNotBlank() }
         val index = queue.indexOfFirst { it.id == item.id }.coerceAtLeast(0)
         val intent = Intent(context, LyricsPlaybackService::class.java).apply {
             action = LyricsPlaybackService.ACTION_PLAY
@@ -161,6 +165,16 @@ private fun LyricsKeepApp() {
         }
         ContextCompat.startForegroundService(context, intent)
         preview = item
+    }
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        pendingTrack?.let { startTrackNow(it) }
+        pendingTrack = null
+    }
+    fun startTrack(item: Lyric) {
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            pendingTrack = item
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else startTrackNow(item)
     }
 
     DisposableEffect(context, lyrics) {
