@@ -144,7 +144,7 @@ private fun SettingsToggleCard(title: String, description: String, icon: ImageVe
     val card = if (dark) KeepDarkCard else Color.White
     val text = if (dark) Color.White else Color(0xFF172019)
     val muted = if (dark) KeepMuted else Color(0xFF68766C)
-    Surface(modifier.heightIn(min = 150.dp).clickable { onCheckedChange(!checked) }, shape = RoundedCornerShape(16.dp), color = card, border = BorderStroke(1.dp, if (checked) Color(0x8855D982) else if (dark) KeepBorder else Color(0xFFDCE5DE)) {
+    Surface(modifier.heightIn(min = 150.dp).clickable { onCheckedChange(!checked) }, shape = RoundedCornerShape(16.dp), color = card, border = BorderStroke(1.dp, if (checked) Color(0x8855D982) else if (dark) KeepBorder else Color(0xFFDCE5DE))) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(shape = RoundedCornerShape(10.dp), color = if (checked) Color(0x2222C55E) else if (dark) Color(0xFF202A23) else Color(0xFFEAF1EB)) {
