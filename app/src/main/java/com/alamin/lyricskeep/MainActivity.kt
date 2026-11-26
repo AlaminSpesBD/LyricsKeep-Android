@@ -250,19 +250,78 @@ private fun LyricsKeepApp() {
             ) { Text("+", fontSize = 28.sp) }
         }
 
+
         if (preview != null) {
             val item = preview!!
-            AlertDialog(onDismissRequest = { preview = null }, title = { Text(item.title) },
-                text = { Column(Modifier.fillMaxWidth().heightIn(max = 480.dp).verticalScroll(rememberScrollState())) {
-                    Text(item.folder, color = Color(0xFF9B8CFF), fontSize = 12.sp)
-                    Spacer(Modifier.height(10.dp))
-                    Text(item.body, color = Color.White, fontSize = 15.sp, lineHeight = 25.sp)
-                } },
-                confirmButton = { TextButton(onClick = {
-                    editing = item; title = item.title; body = item.body; folder = item.folder; coverPath = item.coverPath; audioPath = item.audioPath
-                    preview = null; showEditor = true
-                }) { Text("Edit") } },
-                dismissButton = { TextButton(onClick = { preview = null }) { Text("Close") } })
+            BackHandler { mediaPlayer?.release(); mediaPlayer = null; isPlaying = false; preview = null }
+            DisposableEffect(item.id) {
+                onDispose { mediaPlayer?.release(); mediaPlayer = null; isPlaying = false }
+            }
+            LaunchedEffect(isPlaying) {
+                while (isPlaying) {
+                    currentMs = mediaPlayer?.let { runCatching { it.currentPosition }.getOrDefault(0) } ?: 0
+                    kotlinx.coroutines.delay(500)
+                }
+            }
+            Surface(Modifier.fillMaxSize(), color = Color(0xFFF8F8FB)) {
+                Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 18.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { preview = null }) { Text("⬅ Back", color = Color(0xFF28334A)) }
+                        Spacer(Modifier.weight(1f))
+                        TextButton(onClick = {
+                            editing = item; title = item.title; body = item.body; folder = item.folder
+                            coverPath = item.coverPath; audioPath = item.audioPath
+                            preview = null; showEditor = true
+                        }) { Text("✎ Edit") }
+                    }
+                    Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (item.coverPath.isNotBlank()) {
+                            val bitmap = remember(item.coverPath) { runCatching { BitmapFactory.decodeFile(item.coverPath)?.asImageBitmap() }.getOrNull() }
+                            bitmap?.let { Image(bitmap = it, contentDescription = "Cover image", modifier = Modifier.fillMaxWidth().heightIn(max = 230.dp), contentScale = ContentScale.Fit) }
+                            Spacer(Modifier.height(14.dp))
+                        }
+                        Text(item.title, color = Color(0xFF202333), fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                        Text("📁 " + item.folder, color = Color.Gray, fontSize = 13.sp, modifier = Modifier.padding(8.dp))
+                        Divider(Modifier.padding(vertical = 12.dp))
+                        Text(item.body, color = Color(0xFF25252B), fontSize = 21.sp, lineHeight = 38.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 28.dp))
+                    }
+                    if (item.audioPath.isNotBlank()) {
+                        Surface(Modifier.fillMaxWidth().padding(bottom = 12.dp), shape = RoundedCornerShape(24.dp), color = Color(0xFF26324A), shadowElevation = 8.dp) {
+                            Column(Modifier.padding(15.dp)) {
+                                Text(item.title, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                Slider(value = currentMs.toFloat().coerceIn(0f, durationMs.coerceAtLeast(1).toFloat()), onValueChange = { currentMs = it.toInt() }, onValueChangeFinished = { runCatching { mediaPlayer?.seekTo(currentMs) } }, valueRange = 0f..durationMs.coerceAtLeast(1).toFloat())
+                                Row {
+                                    Text("%d:%02d".format(currentMs/60000,(currentMs/1000)%60), color = Color.White, fontSize = 11.sp)
+                                    Spacer(Modifier.weight(1f))
+                                    Text("%d:%02d".format(durationMs/60000,(durationMs/1000)%60), color = Color.White, fontSize = 11.sp)
+                                }
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                                    TextButton(onClick = { runCatching { mediaPlayer?.seekTo(0); currentMs = 0 } }) { Text("↶", color = Color.White) }
+                                    TextButton(onClick = { runCatching { mediaPlayer?.seekTo((currentMs-10000).coerceAtLeast(0)) } }) { Text("◀◀", color = Color.White) }
+                                    Button(onClick = {
+                                        runCatching {
+                                            if (mediaPlayer == null) {
+                                                mediaPlayer = MediaPlayer().apply {
+                                                    setDataSource(item.audioPath)
+                                                    setOnPreparedListener { mp -> durationMs = mp.duration; mp.start(); isPlaying = true }
+                                                    setOnCompletionListener { isPlaying = false; currentMs = 0 }
+                                                    prepareAsync()
+                                                }
+                                            } else if (isPlaying) {
+                                                mediaPlayer?.pause(); isPlaying = false
+                                            } else {
+                                                mediaPlayer?.start(); isPlaying = true
+                                            }
+                                        }
+                                    }) { Text(if (isPlaying) "Ⅱ" else "▶", fontSize = 21.sp) }
+                                    TextButton(onClick = { runCatching { mediaPlayer?.seekTo((currentMs+10000).coerceAtMost(durationMs)) } }) { Text("▶▶", color = Color.White) }
+                                    TextButton(onClick = { runCatching { mediaPlayer?.seekTo(0); currentMs = 0 } }) { Text("🔁", color = Color.White) }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
         if (showEditor) {
             AlertDialog(
