@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -107,6 +108,9 @@ private fun LyricsKeepApp() {
     var keepScreenOn by remember { mutableStateOf(prefs.getBoolean("keep_screen_on", false)) }
     var autoBackup by remember { mutableStateOf(prefs.getBoolean("auto_backup", false)) }
     var fontScale by remember { mutableFloatStateOf(prefs.getFloat("font_scale", 1f)) }
+    var nameFont by remember { mutableStateOf(prefs.getString("name_font", "Sans Serif") ?: "Sans Serif") }
+    var lyricsFont by remember { mutableStateOf(prefs.getString("lyrics_font", "Serif") ?: "Serif") }
+    var folderFont by remember { mutableStateOf(prefs.getString("folder_font", "Sans Serif") ?: "Sans Serif") }
     var defaultSort by remember { mutableStateOf(prefs.getString("sort_order", "Recently added") ?: "Recently added") }
     var defaultFolder by remember { mutableStateOf(prefs.getString("default_folder", "General") ?: "General") }
 
@@ -115,14 +119,7 @@ private fun LyricsKeepApp() {
         when {
             showFolders -> showFolders = false
             showEditor -> showEditor = false
-            preview != null -> {
-                mediaPlayer?.runCatching { stop() }
-                mediaPlayer?.release()
-                mediaPlayer = null
-                isPlaying = false
-                currentMs = 0
-                preview = null
-            }
+            preview != null -> { preview = null }
             activeTab != 0 -> activeTab = 0
             selectedFolder != "All" -> {
                 val parent = selectedFolder.substringBeforeLast("/", "All")
@@ -186,7 +183,7 @@ private fun LyricsKeepApp() {
                 currentMs = intent.getIntExtra(LyricsPlaybackService.EXTRA_POSITION, 0)
                 val id = intent.getLongExtra(LyricsPlaybackService.EXTRA_ID, -1L)
                 currentTrackId = id
-                lyrics.firstOrNull { it.id == id }?.let { preview = it }
+                if (preview != null) lyrics.firstOrNull { it.id == id }?.let { preview = it }
             }
         }
         ContextCompat.registerReceiver(context, receiver, IntentFilter(LyricsPlaybackService.ACTION_STATE), ContextCompat.RECEIVER_NOT_EXPORTED)
@@ -356,7 +353,7 @@ private fun LyricsKeepApp() {
                                     Text("📁", fontSize = 22.sp)
                                     Spacer(Modifier.width(12.dp))
                                     Column(Modifier.weight(1f)) {
-                                        Text(path.substringAfterLast("/"), color = Color.White, fontWeight = FontWeight.SemiBold)
+                                        Text(path.substringAfterLast("/"), color = Color.White, fontWeight = FontWeight.SemiBold, fontFamily = keepFontFamily(folderFont))
                                         Text(path, color = Color(0xFF91A096), fontSize = 11.sp)
                                     }
                                     Text("›", color = Color(0xFF1ED760), fontSize = 24.sp)
@@ -389,11 +386,11 @@ private fun LyricsKeepApp() {
                             ) {
                                 Column(Modifier.padding(17.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(item.title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, modifier = Modifier.weight(1f))
+                                        Text(item.title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, fontFamily = keepFontFamily(nameFont), modifier = Modifier.weight(1f))
                                         Text(item.folder, color = Color(0xFF8EE7A8), fontSize = 11.sp)
                                     }
                                     Spacer(Modifier.height(7.dp))
-                                    Text(item.body, color = Color(0xFFB8C0D8), maxLines = 3, fontSize = 13.sp, lineHeight = 19.sp)
+                                    Text(item.body, color = Color(0xFFB8C0D8), maxLines = 3, fontSize = 13.sp, lineHeight = 19.sp, fontFamily = keepFontFamily(lyricsFont))
                                 }
                             }
                         }
@@ -424,6 +421,9 @@ private fun LyricsKeepApp() {
                     keepScreenOn = keepScreenOn, onKeepScreenOnChange = { keepScreenOn = it; prefs.edit().putBoolean("keep_screen_on", it).apply() },
                     autoBackup = autoBackup, onAutoBackupChange = { autoBackup = it; prefs.edit().putBoolean("auto_backup", it).apply() },
                     fontScale = fontScale, onFontScaleChange = { fontScale = it; prefs.edit().putFloat("font_scale", it).apply() },
+                    nameFont = nameFont, onNameFontChange = { nameFont = it; prefs.edit().putString("name_font", it).apply() },
+                    lyricsFont = lyricsFont, onLyricsFontChange = { lyricsFont = it; prefs.edit().putString("lyrics_font", it).apply() },
+                    folderFont = folderFont, onFolderFontChange = { folderFont = it; prefs.edit().putString("folder_font", it).apply() },
                     defaultSort = defaultSort, onDefaultSortChange = { defaultSort = it; prefs.edit().putString("sort_order", it).apply() },
                     defaultFolder = defaultFolder, onDefaultFolderChange = { defaultFolder = it; prefs.edit().putString("default_folder", it).apply() }
                 )
@@ -436,6 +436,23 @@ private fun LyricsKeepApp() {
         }
 
 
+        if (preview == null && currentTrackId != -1L && durationMs > 0) {
+            val playingItem = lyrics.firstOrNull { it.id == currentTrackId }
+            Surface(Modifier.align(Alignment.BottomCenter).padding(bottom = 88.dp, start = 14.dp, end = 14.dp).fillMaxWidth()
+                .clickable { playingItem?.let { preview = it } },
+                color = Color(0xFF17251C), shape = RoundedCornerShape(20.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x7755D982)), shadowElevation = 12.dp) {
+                Row(Modifier.padding(horizontal = 13.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(playingItem?.title ?: "LyricsKeep Player", color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                        Text(if (isPlaying) "Playing in background" else "Paused", color = Color(0xFF8EE7A8), fontSize = 11.sp)
+                    }
+                    IconButton(onClick = { context.startService(Intent(context, LyricsPlaybackService::class.java).setAction(LyricsPlaybackService.ACTION_PREVIOUS)) }) { Text("◀", color = Color.White) }
+                    IconButton(onClick = { context.startService(Intent(context, LyricsPlaybackService::class.java).setAction(LyricsPlaybackService.ACTION_TOGGLE)) }) { Text(if (isPlaying) "Ⅱ" else "▶", color = Color(0xFF1ED760), fontSize = 20.sp) }
+                    IconButton(onClick = { context.startService(Intent(context, LyricsPlaybackService::class.java).setAction(LyricsPlaybackService.ACTION_NEXT)) }) { Text("▶", color = Color.White) }
+                }
+            }
+        }
         if (preview != null) {
             val item = preview!!
             Surface(Modifier.fillMaxSize(), color = Color(0xFF0A0D0B)) {
@@ -460,10 +477,10 @@ private fun LyricsKeepApp() {
                         }
                     }
                     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(item.title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                        Text("📁 " + item.folder, color = Color(0xFF91A096), fontSize = 13.sp, modifier = Modifier.padding(8.dp))
+                        Text(item.title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, fontFamily = keepFontFamily(nameFont))
+                        Text("📁 " + item.folder, color = Color(0xFF91A096), fontSize = 13.sp, fontFamily = keepFontFamily(folderFont), modifier = Modifier.padding(8.dp))
                         Divider(Modifier.padding(vertical = 12.dp))
-                        Text(item.body, color = Color(0xFFE4ECE6), fontSize = 21.sp, lineHeight = 38.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 28.dp))
+                        Text(item.body, color = Color(0xFFE4ECE6), fontSize = 21.sp, lineHeight = 38.sp, textAlign = TextAlign.Center, fontFamily = keepFontFamily(lyricsFont), modifier = Modifier.fillMaxWidth().padding(bottom = 28.dp))
                     }
                     if (item.audioPath.isNotBlank()) {
                         val playerCover = remember(item.coverPath) {
@@ -536,14 +553,19 @@ private fun LyricsKeepApp() {
                 onDismissRequest = { handleBack() },
                 title = { Text(if (editing == null) "New lyric" else "Edit lyric") },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OutlinedTextField(title, { title = it }, label = { Text("Title") }, singleLine = true)
-                        OutlinedTextField(folder, { folder = it }, label = { Text("Folder / Subfolder") }, singleLine = true, supportingText = { Text("Use / between levels, e.g. Songs/Old songs") })
-                        OutlinedTextField(body, { body = it }, label = { Text("Lyrics") }, minLines = 5)
-                        Text("🖼 Cover image (optional)", color = Color.Gray)
-                        OutlinedButton(onClick = { coverPicker.launch("image/*") }, modifier = Modifier.fillMaxWidth()) { Text(if (coverPath.isBlank()) "Choose cover image" else "Cover selected ✓") }
-                        Text("♫ MP3 audio (optional)", color = Color.Gray)
-                        OutlinedButton(onClick = { audioPicker.launch("audio/*") }, modifier = Modifier.fillMaxWidth()) { Text(if (audioPath.isBlank()) "Choose MP3 audio" else "Audio selected ✓") }
+                    Column(Modifier.fillMaxWidth().heightIn(max = 500.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedTextField(title, { title = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Lyrics name") }, singleLine = true)
+                        OutlinedTextField(folder, { folder = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Save in folder") }, singleLine = true, supportingText = { Text("Example: Songs/Old songs") })
+                        OutlinedTextField(body, { body = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Write lyrics here") }, minLines = 6)
+                        Text("THUMBNAIL IMAGE", color = Color(0xFF1ED760), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        if (coverPath.isNotBlank()) {
+                            val thumbnail = remember(coverPath) { runCatching { BitmapFactory.decodeFile(coverPath)?.asImageBitmap() }.getOrNull() }
+                            thumbnail?.let { Image(it, contentDescription = "Selected thumbnail", modifier = Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(14.dp)), contentScale = ContentScale.Crop) }
+                        }
+                        OutlinedButton(onClick = { coverPicker.launch("image/*") }, modifier = Modifier.fillMaxWidth()) { Text(if (coverPath.isBlank()) "＋ Add thumbnail from Gallery" else "✓ Thumbnail added • Change image") }
+                        Text("MP3 SONG", color = Color(0xFF1ED760), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        Text(if (audioPath.isBlank()) "No MP3 selected" else "♫ " + File(audioPath).name, color = Color(0xFFB8C0D8), fontSize = 12.sp)
+                        OutlinedButton(onClick = { audioPicker.launch("audio/*") }, modifier = Modifier.fillMaxWidth()) { Text(if (audioPath.isBlank()) "＋ Add MP3 from device" else "✓ MP3 added • Change song") }
                     }
                 },
                 confirmButton = {
@@ -603,4 +625,12 @@ private fun LyricsKeepApp() {
         }
 
     }
+}
+
+
+private fun keepFontFamily(label: String): FontFamily = when (label) {
+    "Serif" -> FontFamily.Serif
+    "Monospace" -> FontFamily.Monospace
+    "Cursive" -> FontFamily.Cursive
+    else -> FontFamily.SansSerif
 }
