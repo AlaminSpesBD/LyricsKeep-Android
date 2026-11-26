@@ -348,18 +348,17 @@ private fun LyricsKeepApp() {
                 if (childFolders.isNotEmpty()) {
                     LazyColumn(Modifier.fillMaxWidth().heightIn(max = 190.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(childFolders, key = { it }) { path ->
-                            Surface(Modifier.fillMaxWidth().clickable { selectedFolder = path },
-                                color = Color(0xFF21151C), shape = RoundedCornerShape(16.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF553044))) {
-                                Row(Modifier.padding(horizontal = 15.dp, vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Text("📁", fontSize = 22.sp)
-                                    Spacer(Modifier.width(12.dp))
+                            Column(Modifier.fillMaxWidth().clickable { selectedFolder = path }) {
+                                Row(Modifier.padding(horizontal = 5.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text("📁", fontSize = 17.sp)
+                                    Spacer(Modifier.width(11.dp))
                                     Column(Modifier.weight(1f)) {
-                                        Text(path.substringAfterLast("/"), color = Color.White, fontWeight = FontWeight.SemiBold, fontFamily = keepFontFamily(folderFont))
-                                        Text(path, color = Color(0xFFB68A9F), fontSize = 11.sp)
+                                        Text(path.substringAfterLast("/"), color = pageText, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, fontFamily = keepFontFamily(folderFont))
+                                        if (showFolderPath) Text(path, color = pageMuted, fontSize = 10.sp)
                                     }
-                                    Text("›", color = Color(0xFFFF4F9A), fontSize = 24.sp)
+                                    Text("›", color = Color(0xFFFF4F9A), fontSize = 22.sp)
                                 }
+                                Divider(color = Color(0x22FF4F9A), thickness = 0.7.dp)
                             }
                         }
                     }
