@@ -114,42 +114,70 @@ private fun LyricsKeepApp() {
         persistFolders(folders + paths)
     }
 
+
     val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri: Uri? ->
         if (uri != null) runCatching {
-            val lj = JSONArray()
-            lyrics.forEach { lj.put(JSONObject().put("id", it.id).put("title", it.title).put("body", it.body).put("folder", it.folder).put("coverPath", it.coverPath).put("audioPath", it.audioPath)) }
-            val fj = JSONArray()
-            folders.forEach { fj.put(it) }
+            val json = JSONArray()
             context.contentResolver.openOutputStream(uri)?.use { output ->
                 ZipOutputStream(output).use { zip ->
+                    lyrics.forEach { item ->
+                        val coverEntry = if (item.coverPath.isNotBlank() && File(item.coverPath).exists()) "covers/" + File(item.coverPath).name else ""
+                        val audioEntry = if (item.audioPath.isNotBlank() && File(item.audioPath).exists()) "audios/" + File(item.audioPath).name else ""
+                        json.put(JSONObject().put("id", item.id).put("title", item.title).put("body", item.body)
+                            .put("folder", item.folder).put("coverEntry", coverEntry).put("audioEntry", audioEntry)
+                            .put("coverPath", item.coverPath).put("audioPath", item.audioPath))
+                        listOf(Pair(coverEntry, item.coverPath), Pair(audioEntry, item.audioPath)).forEach { pair ->
+                            if (pair.first.isNotBlank()) {
+                                val file = File(pair.second)
+                                if (file.exists()) {
+                                    zip.putNextEntry(ZipEntry(pair.first))
+                                    file.inputStream().use { it.copyTo(zip) }
+                                    zip.closeEntry()
+                                }
+                            }
+                        }
+                    }
                     zip.putNextEntry(ZipEntry("lyrics.json"))
-                    zip.write(lj.toString().toByteArray(Charsets.UTF_8)); zip.closeEntry()
+                    zip.write(json.toString().toByteArray(Charsets.UTF_8)); zip.closeEntry()
+                    val foldersJson = JSONArray().apply { folders.forEach { put(it) } }
                     zip.putNextEntry(ZipEntry("folders.json"))
-                    zip.write(fj.toString().toByteArray(Charsets.UTF_8)); zip.closeEntry()
+                    zip.write(foldersJson.toString().toByteArray(Charsets.UTF_8)); zip.closeEntry()
                 }
             }
         }
     }
     val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) runCatching {
-            var lj = "[]"; var fj = "[]"
+            var lyricsJson = "[]"
+            var foldersJson = "[]"
+            val restoredFiles = mutableMapOf<String, String>()
             context.contentResolver.openInputStream(uri)?.use { input ->
                 ZipInputStream(input).use { zip ->
                     while (true) {
                         val entry = zip.nextEntry ?: break
-                        val value = zip.readBytes().toString(Charsets.UTF_8)
-                        if (entry.name == "lyrics.json") lj = value
-                        if (entry.name == "folders.json") fj = value
+                        when (entry.name) {
+                            "lyrics.json" -> lyricsJson = zip.readBytes().toString(Charsets.UTF_8)
+                            "folders.json" -> foldersJson = zip.readBytes().toString(Charsets.UTF_8)
+                            else -> {
+                                val dest = File(context.filesDir, "restored_media/" + File(entry.name).name)
+                                dest.parentFile?.mkdirs()
+                                dest.outputStream().use { output -> zip.copyTo(output) }
+                                restoredFiles[entry.name] = dest.absolutePath
+                            }
+                        }
                         zip.closeEntry()
                     }
                 }
             }
-            val a = JSONArray(lj)
-            val restored = (0 until a.length()).map { i ->
-                val o = a.getJSONObject(i)
-                Lyric(o.optLong("id"), o.optString("title"), o.optString("body"), o.optString("folder", "General"), o.optString("coverPath"), o.optString("audioPath"))
+            val array = JSONArray(lyricsJson)
+            val restored = (0 until array.length()).map { i ->
+                val o = array.getJSONObject(i)
+                val coverEntry = o.optString("coverEntry")
+                val audioEntry = o.optString("audioEntry")
+                Lyric(o.optLong("id"), o.optString("title"), o.optString("body"), o.optString("folder", "General"),
+                    restoredFiles[coverEntry] ?: o.optString("coverPath"), restoredFiles[audioEntry] ?: o.optString("audioPath"))
             }
-            val fa = JSONArray(fj)
+            val fa = JSONArray(foldersJson)
             val restoredFolders = (0 until fa.length()).map { fa.getString(it) }
             save(restored)
             persistFolders(restoredFolders + restored.map { it.folder } + "General")
