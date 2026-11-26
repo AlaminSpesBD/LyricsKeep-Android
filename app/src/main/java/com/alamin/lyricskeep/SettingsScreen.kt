@@ -18,10 +18,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val KeepGreen = Color(0xFF1ED760)
-private val KeepDarkCard = Color(0xFF151D18)
-private val KeepBorder = Color(0xFF233027)
-private val KeepMuted = Color(0xFF91A096)
+private val KeepGreen = Color(0xFFFF4F9A)
+private val KeepDarkCard = Color(0xFF21151C)
+private val KeepBorder = Color(0xFF553044)
+private val KeepMuted = Color(0xFFB68A9F)
 
 @Composable
 fun BoxScope.LyricsKeepBottomBar(activeTab: Int, onTabSelected: (Int) -> Unit) {
@@ -33,7 +33,7 @@ fun BoxScope.LyricsKeepBottomBar(activeTab: Int, onTabSelected: (Int) -> Unit) {
     )
     Surface(
         modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(horizontal = 22.dp, vertical = 12.dp),
-        color = Color(0xFF151D18), shape = RoundedCornerShape(30.dp),
+        color = Color(0xFF21151C), shape = RoundedCornerShape(30.dp),
         border = BorderStroke(1.dp, Color(0xFF2A382E)), shadowElevation = 18.dp
     ) {
         Row(Modifier.padding(horizontal = 9.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -41,8 +41,8 @@ fun BoxScope.LyricsKeepBottomBar(activeTab: Int, onTabSelected: (Int) -> Unit) {
                 val selected = activeTab == index
                 Surface(Modifier.height(46.dp).clickable { onTabSelected(index) }, shape = RoundedCornerShape(24.dp), color = if (selected) KeepGreen else Color.Transparent) {
                     Row(Modifier.padding(horizontal = if (selected) 17.dp else 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                        Icon(icon, contentDescription = label, tint = if (selected) Color(0xFF07140B) else Color(0xFF9BA99F), modifier = Modifier.size(21.dp))
-                        if (selected) { Spacer(Modifier.width(8.dp)); Text(label, color = Color(0xFF07140B), fontSize = 13.sp, fontWeight = FontWeight.Bold) }
+                        Icon(icon, contentDescription = label, tint = if (selected) Color(0xFF2A1020) else Color(0xFF9BA99F), modifier = Modifier.size(21.dp))
+                        if (selected) { Spacer(Modifier.width(8.dp)); Text(label, color = Color(0xFF2A1020), fontSize = 13.sp, fontWeight = FontWeight.Bold) }
                     }
                 }
             }
@@ -81,11 +81,11 @@ fun LyricsKeepSettingsScreen(
 ) {
     var dialog by remember { mutableStateOf<String?>(null) }
     val titleColor = if (darkMode) Color.White else Color(0xFF172019)
-    val muted = if (darkMode) KeepMuted else Color(0xFF68766C)
+    val muted = if (darkMode) KeepMuted else Color(0xFF806A76)
     LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 112.dp), verticalArrangement = Arrangement.spacedBy(17.dp)) {
         item {
             Text("Settings", color = titleColor, fontSize = 29.sp, fontWeight = FontWeight.Bold)
-            Text("Make LyricsKeep work your way", color = muted, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
+            Text("Make Alamin Lyrics and Keeps yours", color = muted, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
         }
         item {
             SettingsSectionHeader("PAGE & BEHAVIOR", Icons.Filled.Tune, darkMode)
@@ -121,8 +121,8 @@ fun LyricsKeepSettingsScreen(
             SettingsValueCard("Backup & restore", "Export or restore your lyrics library", Icons.Filled.FolderZip, "ZIP archive", darkMode, Modifier.fillMaxWidth()) { dialog = "backup" }
         }
         item {
-            Text("LYRICSKEEP", color = muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
-            Text("Your words, always close.", color = muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
+            Text("ALAMIN LYRICS AND KEEPS", color = muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
+            Text("Your personal lyrics library.", color = muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
         }
     }
     when (dialog) {
@@ -147,7 +147,7 @@ private fun SettingsSectionHeader(label: String, icon: ImageVector, dark: Boolea
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 10.dp)) {
         Icon(icon, contentDescription = null, tint = KeepGreen, modifier = Modifier.size(17.dp))
         Spacer(Modifier.width(8.dp))
-        Text(label, color = if (dark) Color(0xFF9AAC9F) else Color(0xFF617267), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        Text(label, color = if (dark) Color(0xFF9AAC9F) else Color(0xFF806A76), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
     }
 }
 
@@ -155,15 +155,15 @@ private fun SettingsSectionHeader(label: String, icon: ImageVector, dark: Boolea
 private fun SettingsToggleCard(title: String, description: String, icon: ImageVector, checked: Boolean, onCheckedChange: (Boolean) -> Unit, dark: Boolean, modifier: Modifier = Modifier) {
     val card = if (dark) KeepDarkCard else Color.White
     val text = if (dark) Color.White else Color(0xFF172019)
-    val muted = if (dark) KeepMuted else Color(0xFF68766C)
-    Surface(modifier.heightIn(min = 150.dp).clickable { onCheckedChange(!checked) }, shape = RoundedCornerShape(16.dp), color = card, border = BorderStroke(1.dp, if (checked) Color(0x8855D982) else if (dark) KeepBorder else Color(0xFFDCE5DE))) {
+    val muted = if (dark) KeepMuted else Color(0xFF806A76)
+    Surface(modifier.heightIn(min = 150.dp).clickable { onCheckedChange(!checked) }, shape = RoundedCornerShape(16.dp), color = card, border = BorderStroke(1.dp, if (checked) Color(0x88FF4F9A) else if (dark) KeepBorder else Color(0xFFFFC5DC))) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = RoundedCornerShape(10.dp), color = if (checked) Color(0x2222C55E) else if (dark) Color(0xFF202A23) else Color(0xFFEAF1EB)) {
+                Surface(shape = RoundedCornerShape(10.dp), color = if (checked) Color(0x22FF4F9A) else if (dark) Color(0xFF351B2A) else Color(0xFFFFE3EF)) {
                     Icon(icon, contentDescription = null, tint = if (checked) KeepGreen else muted, modifier = Modifier.padding(8.dp).size(17.dp))
                 }
                 Spacer(Modifier.weight(1f))
-                Switch(checked = checked, onCheckedChange = onCheckedChange, modifier = Modifier.height(30.dp), colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF07140B), checkedTrackColor = KeepGreen))
+                Switch(checked = checked, onCheckedChange = onCheckedChange, modifier = Modifier.height(30.dp), colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF2A1020), checkedTrackColor = KeepGreen))
             }
             Spacer(Modifier.height(9.dp))
             Text(title, color = text, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -177,10 +177,10 @@ private fun SettingsToggleCard(title: String, description: String, icon: ImageVe
 private fun SettingsValueCard(title: String, description: String, icon: ImageVector, value: String, dark: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val card = if (dark) KeepDarkCard else Color.White
     val text = if (dark) Color.White else Color(0xFF172019)
-    val muted = if (dark) KeepMuted else Color(0xFF68766C)
-    Surface(modifier = modifier.clickable(onClick = onClick), shape = RoundedCornerShape(16.dp), color = card, border = BorderStroke(1.dp, if (dark) KeepBorder else Color(0xFFDCE5DE))) {
+    val muted = if (dark) KeepMuted else Color(0xFF806A76)
+    Surface(modifier = modifier.clickable(onClick = onClick), shape = RoundedCornerShape(16.dp), color = card, border = BorderStroke(1.dp, if (dark) KeepBorder else Color(0xFFFFC5DC))) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = RoundedCornerShape(11.dp), color = if (dark) Color(0xFF202A23) else Color(0xFFEAF1EB)) {
+            Surface(shape = RoundedCornerShape(11.dp), color = if (dark) Color(0xFF351B2A) else Color(0xFFFFE3EF)) {
                 Icon(icon, contentDescription = null, tint = KeepGreen, modifier = Modifier.padding(10.dp).size(19.dp))
             }
             Spacer(Modifier.width(12.dp))
