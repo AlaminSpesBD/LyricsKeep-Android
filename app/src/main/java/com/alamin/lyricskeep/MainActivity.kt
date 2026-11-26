@@ -1,6 +1,14 @@
 package com.alamin.lyricskeep
 
 import android.os.Bundle
+import android.media.MediaPlayer
+import android.graphics.BitmapFactory
+import java.io.File
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,7 +38,7 @@ import androidx.compose.ui.unit.sp
 import org.json.JSONArray
 import org.json.JSONObject
 
-private data class Lyric(val id: Long, val title: String, val body: String, val folder: String)
+private data class Lyric(val id: Long, val title: String, val body: String, val folder: String, val coverPath: String = "", val audioPath: String = "")
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,7 +56,7 @@ private fun LyricsKeepApp() {
         val array = JSONArray(prefs.getString("lyrics", "[]"))
         (0 until array.length()).map { i ->
             val o = array.getJSONObject(i)
-            Lyric(o.optLong("id"), o.optString("title"), o.optString("body"), o.optString("folder"))
+            Lyric(o.optLong("id"), o.optString("title"), o.optString("body"), o.optString("folder"), o.optString("coverPath"), o.optString("audioPath"))
         }
     }.getOrDefault(emptyList())
 
@@ -64,7 +72,30 @@ private fun LyricsKeepApp() {
     var title by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
     var folder by remember { mutableStateOf("General") }
+    var coverPath by remember { mutableStateOf("") }
+    var audioPath by remember { mutableStateOf("") }
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+    var isPlaying by remember { mutableStateOf(false) }
+    var durationMs by remember { mutableIntStateOf(0) }
+    var currentMs by remember { mutableIntStateOf(0) }
     var showFolders by remember { mutableStateOf(false) }
+
+    val coverPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) runCatching {
+            val dir = File(context.filesDir, "covers").apply { mkdirs() }
+            val dest = File(dir, "cover_" + System.currentTimeMillis() + ".img")
+            context.contentResolver.openInputStream(uri)?.use { input -> dest.outputStream().use { output -> input.copyTo(output) } }
+            coverPath = dest.absolutePath
+        }
+    }
+    val audioPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) runCatching {
+            val dir = File(context.filesDir, "audios").apply { mkdirs() }
+            val dest = File(dir, "audio_" + System.currentTimeMillis() + ".mp3")
+            context.contentResolver.openInputStream(uri)?.use { input -> dest.outputStream().use { output -> input.copyTo(output) } }
+            audioPath = dest.absolutePath
+        }
+    }
 
     fun persistFolders(items: List<String>) {
         val a = JSONArray(); items.distinct().sorted().forEach { a.put(it) }
@@ -75,7 +106,7 @@ private fun LyricsKeepApp() {
         val array = JSONArray()
         items.forEach { item ->
             array.put(JSONObject().put("id", item.id).put("title", item.title)
-                .put("body", item.body).put("folder", item.folder))
+                .put("body", item.body).put("folder", item.folder).put("coverPath", item.coverPath).put("audioPath", item.audioPath))
         }
         prefs.edit().putString("lyrics", array.toString()).apply()
         lyrics = items
@@ -86,7 +117,7 @@ private fun LyricsKeepApp() {
     val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri: Uri? ->
         if (uri != null) runCatching {
             val lj = JSONArray()
-            lyrics.forEach { lj.put(JSONObject().put("id", it.id).put("title", it.title).put("body", it.body).put("folder", it.folder)) }
+            lyrics.forEach { lj.put(JSONObject().put("id", it.id).put("title", it.title).put("body", it.body).put("folder", it.folder).put("coverPath", it.coverPath).put("audioPath", it.audioPath)) }
             val fj = JSONArray()
             folders.forEach { fj.put(it) }
             context.contentResolver.openOutputStream(uri)?.use { output ->
@@ -116,7 +147,7 @@ private fun LyricsKeepApp() {
             val a = JSONArray(lj)
             val restored = (0 until a.length()).map { i ->
                 val o = a.getJSONObject(i)
-                Lyric(o.optLong("id"), o.optString("title"), o.optString("body"), o.optString("folder", "General"))
+                Lyric(o.optLong("id"), o.optString("title"), o.optString("body"), o.optString("folder", "General"), o.optString("coverPath"), o.optString("audioPath"))
             }
             val fa = JSONArray(fj)
             val restoredFolders = (0 until fa.length()).map { fa.getString(it) }
@@ -213,7 +244,7 @@ private fun LyricsKeepApp() {
                 }
             }
             FloatingActionButton(
-                onClick = { editing = null; title = ""; body = ""; folder = if (selectedFolder == "All") "General" else selectedFolder; showEditor = true },
+                onClick = { editing = null; title = ""; body = ""; coverPath = ""; audioPath = ""; folder = if (selectedFolder == "All") "General" else selectedFolder; showEditor = true },
                 modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(22.dp),
                 containerColor = Color(0xFF9184F5), contentColor = Color.White
             ) { Text("+", fontSize = 28.sp) }
@@ -228,7 +259,7 @@ private fun LyricsKeepApp() {
                     Text(item.body, color = Color.White, fontSize = 15.sp, lineHeight = 25.sp)
                 } },
                 confirmButton = { TextButton(onClick = {
-                    editing = item; title = item.title; body = item.body; folder = item.folder
+                    editing = item; title = item.title; body = item.body; folder = item.folder; coverPath = item.coverPath; audioPath = item.audioPath
                     preview = null; showEditor = true
                 }) { Text("Edit") } },
                 dismissButton = { TextButton(onClick = { preview = null }) { Text("Close") } })
@@ -242,12 +273,16 @@ private fun LyricsKeepApp() {
                         OutlinedTextField(title, { title = it }, label = { Text("Title") }, singleLine = true)
                         OutlinedTextField(folder, { folder = it }, label = { Text("Folder / Subfolder") }, singleLine = true, supportingText = { Text("Use / between levels, e.g. Songs/Old songs") })
                         OutlinedTextField(body, { body = it }, label = { Text("Lyrics") }, minLines = 5)
+                        Text("🖼 Cover image (optional)", color = Color.Gray)
+                        OutlinedButton(onClick = { coverPicker.launch("image/*") }, modifier = Modifier.fillMaxWidth()) { Text(if (coverPath.isBlank()) "Choose cover image" else "Cover selected ✓") }
+                        Text("♫ MP3 audio (optional)", color = Color.Gray)
+                        OutlinedButton(onClick = { audioPicker.launch("audio/*") }, modifier = Modifier.fillMaxWidth()) { Text(if (audioPath.isBlank()) "Choose MP3 audio" else "Audio selected ✓") }
                     }
                 },
                 confirmButton = {
                     TextButton(onClick = {
                         if (title.isNotBlank() && body.isNotBlank()) {
-                            val item = Lyric(editing?.id ?: System.currentTimeMillis(), title.trim(), body.trim(), folder.trim().ifBlank { "General" })
+                            val item = Lyric(editing?.id ?: System.currentTimeMillis(), title.trim(), body.trim(), folder.trim().ifBlank { "General" }, coverPath, audioPath)
                             val parts = item.folder.split("/").filter { it.isNotBlank() }
                             persistFolders(folders + parts.indices.map { i -> parts.take(i + 1).joinToString("/") })
                             save(if (editing == null) listOf(item) + lyrics else lyrics.map { if (it.id == item.id) item else it })
