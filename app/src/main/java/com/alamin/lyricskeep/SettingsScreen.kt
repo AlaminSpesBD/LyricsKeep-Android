@@ -73,6 +73,9 @@ fun LyricsKeepSettingsScreen(
     keepScreenOn: Boolean, onKeepScreenOnChange: (Boolean) -> Unit,
     autoBackup: Boolean, onAutoBackupChange: (Boolean) -> Unit,
     fontScale: Float, onFontScaleChange: (Float) -> Unit,
+    nameFont: String, onNameFontChange: (String) -> Unit,
+    lyricsFont: String, onLyricsFontChange: (String) -> Unit,
+    folderFont: String, onFolderFontChange: (String) -> Unit,
     defaultSort: String, onDefaultSortChange: (String) -> Unit,
     defaultFolder: String, onDefaultFolderChange: (String) -> Unit
 ) {
@@ -100,8 +103,14 @@ fun LyricsKeepSettingsScreen(
             SettingsSectionHeader("APPEARANCE", Icons.Filled.Palette, darkMode)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SettingsToggleCard("Theme", "Switch between dark and light palettes", if (darkMode) Icons.Filled.DarkMode else Icons.Filled.LightMode, darkMode, onDarkModeChange, darkMode, Modifier.weight(1f))
-                SettingsValueCard("Reading font", "Adjust lyric text size", Icons.Filled.FormatSize, "${(fontScale * 100).toInt()}%", darkMode, Modifier.weight(1f)) { dialog = "font" }
+                SettingsValueCard("Reading size", "Adjust lyric text size", Icons.Filled.FormatSize, "${(fontScale * 100).toInt()}%", darkMode, Modifier.weight(1f)) { dialog = "font" }
             }
+            Spacer(Modifier.height(10.dp))
+            SettingsValueCard("Name font", "Font for lyric titles and names", Icons.Filled.Title, nameFont, darkMode, Modifier.fillMaxWidth()) { dialog = "nameFont" }
+            Spacer(Modifier.height(10.dp))
+            SettingsValueCard("Lyrics font", "Font for the lyrics text", Icons.Filled.TextFields, lyricsFont, darkMode, Modifier.fillMaxWidth()) { dialog = "lyricsFont" }
+            Spacer(Modifier.height(10.dp))
+            SettingsValueCard("Folder font", "Font for folder names and paths", Icons.Filled.Folder, folderFont, darkMode, Modifier.fillMaxWidth()) { dialog = "folderFont" }
         }
         item {
             SettingsSectionHeader("EDITOR & ENGINE", Icons.Filled.Tune, darkMode)
@@ -124,6 +133,9 @@ fun LyricsKeepSettingsScreen(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Small", color = muted); Text("Large", color = muted) }
             }
         }, confirmButton = { TextButton(onClick = { dialog = null }) { Text("Done") } })
+        "nameFont" -> ChoiceDialog("Name font", listOf("Sans Serif", "Serif", "Monospace", "Cursive"), nameFont, { onNameFontChange(it); dialog = null }) { dialog = null }
+        "lyricsFont" -> ChoiceDialog("Lyrics font", listOf("Sans Serif", "Serif", "Monospace", "Cursive"), lyricsFont, { onLyricsFontChange(it); dialog = null }) { dialog = null }
+        "folderFont" -> ChoiceDialog("Folder font", listOf("Sans Serif", "Serif", "Monospace", "Cursive"), folderFont, { onFolderFontChange(it); dialog = null }) { dialog = null }
         "sort" -> ChoiceDialog("Default sort", listOf("Recently added", "Title A–Z", "Title Z–A", "Folder"), defaultSort, { onDefaultSortChange(it); dialog = null }) { dialog = null }
         "folder" -> ChoiceDialog("Default folder", listOf("General", "Favorites", "Unsorted"), defaultFolder, { onDefaultFolderChange(it); dialog = null }) { dialog = null }
         "backup" -> AlertDialog(onDismissRequest = { dialog = null }, title = { Text("Backup & restore") }, text = { Text("Use Backup and Restore from the Lyrics tab to export or import a ZIP archive.") }, confirmButton = { TextButton(onClick = { dialog = null }) { Text("Got it") } })
