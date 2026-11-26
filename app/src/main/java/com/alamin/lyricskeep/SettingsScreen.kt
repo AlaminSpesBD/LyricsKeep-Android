@@ -100,7 +100,7 @@ fun LyricsKeepSettingsScreen(
             SettingsSectionHeader("APPEARANCE", Icons.Filled.Palette, darkMode)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SettingsToggleCard("Theme", "Switch between dark and light palettes", if (darkMode) Icons.Filled.DarkMode else Icons.Filled.LightMode, darkMode, onDarkModeChange, darkMode, Modifier.weight(1f))
-                SettingsValueCard("Reading font", "Adjust lyric text size", Icons.Filled.FormatSize, "\${(fontScale * 100).toInt()}%", darkMode, Modifier.weight(1f)) { dialog = "font" }
+                SettingsValueCard("Reading font", "Adjust lyric text size", Icons.Filled.FormatSize, "${(fontScale * 100).toInt()}%", darkMode, Modifier.weight(1f)) { dialog = "font" }
             }
         }
         item {
@@ -119,7 +119,7 @@ fun LyricsKeepSettingsScreen(
     when (dialog) {
         "font" -> AlertDialog(onDismissRequest = { dialog = null }, title = { Text("Reading font size") }, text = {
             Column {
-                Text("Current: \${(fontScale * 100).toInt()}%", color = titleColor)
+                Text("Current: ${(fontScale * 100).toInt()}%", color = titleColor)
                 Slider(value = fontScale, onValueChange = onFontScaleChange, valueRange = 0.8f..1.5f)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Small", color = muted); Text("Large", color = muted) }
             }
