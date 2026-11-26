@@ -46,8 +46,8 @@ fun LyricsKeepDiaryNotesScreen() {
     var body by remember { mutableStateOf("") }
     var actionEntry by remember { mutableStateOf<KeepEntry?>(null) }
     var createMenu by remember { mutableStateOf(false) }
-    val green = Color(0xFF1ED760)
-    val muted = Color(0xFF91A096)
+    val green = Color(0xFFDB2777)
+    val muted = Color(0xFF946C7B)
     val filtered = entries.filter { it.type == selected && (it.title.contains(search, true) || it.body.contains(search, true)) }
 
     fun persist(list: List<KeepEntry>) {
@@ -63,15 +63,15 @@ fun LyricsKeepDiaryNotesScreen() {
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(25.dp))
         Text("PERSONAL SPACE", color = green, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-        Text("Diary & Notes", color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.Bold)
+        Text("Diary & Notes", color = Color(0xFF351B2A), fontSize = 29.sp, fontWeight = FontWeight.Bold)
         Text("Keep moments, thoughts and quick notes together.", color = muted, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
         Spacer(Modifier.height(20.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
             listOf("Diary", "Notes").forEach { tab ->
                 Surface(Modifier.weight(1f).clickable { selected = tab; search = "" },
                     shape = RoundedCornerShape(15.dp),
-                    color = if (selected == tab) Color(0xFF1D3B29) else Color(0xFF151D18),
-                    border = BorderStroke(1.dp, if (selected == tab) green.copy(alpha = .65f) else Color(0xFF29362D))) {
+                    color = if (selected == tab) Color(0xFFFCEEF2) else Color.White,
+                    border = BorderStroke(1.dp, if (selected == tab) green.copy(alpha = .65f) else Color(0xFFF3C6D4))) {
                     Column(Modifier.padding(14.dp)) {
                         Text(if (tab == "Diary") "✎  Diary" else "▤  Notes", color = if (selected == tab) green else Color.White, fontWeight = FontWeight.Bold)
                         Text(if (tab == "Diary") "Daily entries" else "Quick notepad", color = muted, fontSize = 11.sp)
@@ -84,11 +84,11 @@ fun LyricsKeepDiaryNotesScreen() {
             placeholder = { Text("Search " + selected.lowercase() + "...") }, singleLine = true,
             shape = RoundedCornerShape(16.dp), colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = green, unfocusedBorderColor = Color(0xFF29362D),
-                focusedTextColor = Color.White, unfocusedTextColor = Color.White))
+                focusedTextColor = Color(0xFF351B2A), unfocusedTextColor = Color(0xFF351B2A)))
         Spacer(Modifier.height(17.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(if (selected == "Diary") "Your diary" else "Your notes", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text(if (selected == "Diary") "Your diary" else "Your notes", color = Color(0xFF351B2A), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 Text("${filtered.size} entries", color = muted, fontSize = 12.sp)
             }
             Box {
@@ -120,11 +120,11 @@ fun LyricsKeepDiaryNotesScreen() {
                         Column(Modifier.padding(15.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(entry.title.ifBlank { if (selected == "Diary") "Untitled diary" else "Untitled note" },
-                                    color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, modifier = Modifier.weight(1f))
+                                    color = Color(0xFF351B2A), fontWeight = FontWeight.SemiBold, fontSize = 15.sp, modifier = Modifier.weight(1f))
                                 Text(if (selected == "Diary") "DIARY" else "NOTE", color = green, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                             }
                             Text(stamp, color = muted, fontSize = 10.sp, modifier = Modifier.padding(top = 5.dp, bottom = 8.dp))
-                            Text(entry.body, color = Color(0xFFD1DAD3), fontSize = 13.sp, lineHeight = 19.sp, maxLines = 3)
+                            Text(entry.body, color = Color(0xFF684354), fontSize = 13.sp, lineHeight = 19.sp, maxLines = 3)
                         }
                     }
                 }
