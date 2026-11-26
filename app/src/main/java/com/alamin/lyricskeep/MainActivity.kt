@@ -396,22 +396,32 @@ private fun LyricsKeepApp() {
                     kotlinx.coroutines.delay(500)
                 }
             }
-            Surface(Modifier.fillMaxSize(), color = Color(0xFFF8F8FB)) {
+            Surface(Modifier.fillMaxSize(), color = Color(0xFF0A0D0B)) {
                 Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 18.dp)) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = { handleBack() }) { Text("⬅ Back", color = Color(0xFF28334A)) }
+                    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Surface(Modifier.clickable { handleBack() }, color = Color(0xCC1B3023), shape = RoundedCornerShape(18.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x7755D982))) {
+                            Row(Modifier.padding(horizontal = 15.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("‹", color = Color(0xFF8EE7A8), fontSize = 22.sp)
+                                Spacer(Modifier.width(5.dp)); Text("Back", color = Color.White, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
                         Spacer(Modifier.weight(1f))
-                        TextButton(onClick = {
+                        Surface(Modifier.clickable {
                             editing = item; title = item.title; body = item.body; folder = item.folder
                             coverPath = item.coverPath; audioPath = item.audioPath
                             preview = null; showEditor = true
-                        }) { Text("✎ Edit") }
+                        }, color = Color(0xCC1B3023), shape = RoundedCornerShape(18.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x7755D982))) {
+                            Text("✎  Edit", Modifier.padding(horizontal = 16.dp, vertical = 11.dp),
+                                color = Color(0xFF8EE7A8), fontWeight = FontWeight.SemiBold)
+                        }
                     }
                     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(item.title, color = Color(0xFF202333), fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                        Text("📁 " + item.folder, color = Color.Gray, fontSize = 13.sp, modifier = Modifier.padding(8.dp))
+                        Text(item.title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                        Text("📁 " + item.folder, color = Color(0xFF91A096), fontSize = 13.sp, modifier = Modifier.padding(8.dp))
                         Divider(Modifier.padding(vertical = 12.dp))
-                        Text(item.body, color = Color(0xFF25252B), fontSize = 21.sp, lineHeight = 38.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 28.dp))
+                        Text(item.body, color = Color(0xFFE4ECE6), fontSize = 21.sp, lineHeight = 38.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 28.dp))
                     }
                     if (item.audioPath.isNotBlank()) {
                         val playerCover = remember(item.coverPath) {
