@@ -102,7 +102,7 @@ private fun LyricsKeepApp() {
     var showCreateMenu by remember { mutableStateOf(false) }
     var actionLyric by remember { mutableStateOf<Lyric?>(null) }
     var activeTab by remember { mutableIntStateOf(0) }
-    var darkMode by remember { mutableStateOf(prefs.getBoolean("dark_mode", false)) }
+    var darkMode by remember { mutableStateOf(prefs.getBoolean("dark_mode", true)) }
     var compactCards by remember { mutableStateOf(prefs.getBoolean("compact_cards", false)) }
     var showFolderPath by remember { mutableStateOf(prefs.getBoolean("show_folder_path", true)) }
     var keepScreenOn by remember { mutableStateOf(prefs.getBoolean("keep_screen_on", false)) }
