@@ -93,6 +93,7 @@ private fun LyricsKeepApp() {
     var isPlaying by remember { mutableStateOf(false) }
     var durationMs by remember { mutableIntStateOf(0) }
     var currentMs by remember { mutableIntStateOf(0) }
+    var currentTrackId by remember { mutableLongStateOf(-1L) }
     var showFolders by remember { mutableStateOf(false) }
     var showCreateMenu by remember { mutableStateOf(false) }
     var actionLyric by remember { mutableStateOf<Lyric?>(null) }
@@ -170,6 +171,7 @@ private fun LyricsKeepApp() {
                 durationMs = intent.getIntExtra(LyricsPlaybackService.EXTRA_DURATION, 0)
                 currentMs = intent.getIntExtra(LyricsPlaybackService.EXTRA_POSITION, 0)
                 val id = intent.getLongExtra(LyricsPlaybackService.EXTRA_ID, -1L)
+                currentTrackId = id
                 lyrics.firstOrNull { it.id == id }?.let { preview = it }
             }
         }
@@ -484,7 +486,7 @@ private fun LyricsKeepApp() {
                                     }
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
                                         TextButton(onClick = { context.startService(Intent(context, LyricsPlaybackService::class.java).setAction(LyricsPlaybackService.ACTION_PREVIOUS)) }) { Text("◀◀", color = Color.White) }
-                                        Button(onClick = { context.startService(Intent(context, LyricsPlaybackService::class.java).setAction(LyricsPlaybackService.ACTION_TOGGLE)) }) {
+                                        Button(onClick = { if (currentTrackId != item.id) startTrack(item) else context.startService(Intent(context, LyricsPlaybackService::class.java).setAction(LyricsPlaybackService.ACTION_TOGGLE)) }) {
                                             Text(if (isPlaying) "Ⅱ" else "▶", fontSize = 21.sp)
                                         }
                                         TextButton(onClick = { context.startService(Intent(context, LyricsPlaybackService::class.java).setAction(LyricsPlaybackService.ACTION_NEXT)) }) { Text("▶▶", color = Color.White) }
