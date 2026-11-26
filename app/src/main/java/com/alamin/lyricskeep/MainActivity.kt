@@ -109,13 +109,14 @@ private fun LyricsKeepApp() {
                 currentMs = 0
                 preview = null
             }
+            activeTab != 0 -> activeTab = 0
             selectedFolder != "All" -> {
                 val parent = selectedFolder.substringBeforeLast("/", "All")
                 selectedFolder = if (parent.isBlank()) "All" else parent
             }
         }
     }
-    BackHandler(enabled = showFolders || showEditor || preview != null || selectedFolder != "All") {
+    BackHandler(enabled = showFolders || showEditor || preview != null || activeTab != 0 || selectedFolder != "All") {
         handleBack()
     }
 
@@ -247,11 +248,11 @@ private fun LyricsKeepApp() {
                 Spacer(Modifier.height(22.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("LYRICS KEEP", color = Color(0xFFB8ADFF), fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
+                        Text("LYRICS KEEP", color = Color(0xFF8EE7A8), fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
                         Text("Your words, محفوظ.", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
                         Text("${lyrics.size} saved lyrics", color = Color(0xFF9AA5C4), fontSize = 13.sp)
                     }
-                    Surface(shape = RoundedCornerShape(18.dp), color = Color(0xFF34345E)) {
+                    Surface(shape = RoundedCornerShape(18.dp), color = Color(0xFF1B2A20)) {
                         Text("♪", Modifier.padding(horizontal = 17.dp, vertical = 10.dp), color = Color.White, fontSize = 25.sp)
                     }
                 }
@@ -263,7 +264,7 @@ private fun LyricsKeepApp() {
                     leadingIcon = { Text("⌕", fontSize = 23.sp) },
                     singleLine = true, shape = RoundedCornerShape(18.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF9588FF), unfocusedBorderColor = Color(0xFF343D5C),
+                        focusedBorderColor = Color(0xFF22C55E), unfocusedBorderColor = Color(0xFF314238),
                         focusedTextColor = Color.White, unfocusedTextColor = Color.White
                     )
                 )
@@ -291,7 +292,7 @@ private fun LyricsKeepApp() {
                 if (visible.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("♪", fontSize = 42.sp, color = Color(0xFF8F83E8))
+                            Text("♪", fontSize = 42.sp, color = Color(0xFF1ED760))
                             Text(if (query.isEmpty()) "No lyrics yet" else "No matching lyrics", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                             Text("Tap + to save your first lyric", color = Color(0xFF9AA5C4), fontSize = 13.sp)
                         }
@@ -307,7 +308,7 @@ private fun LyricsKeepApp() {
                                 Column(Modifier.padding(17.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(item.title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, modifier = Modifier.weight(1f))
-                                        Text(item.folder, color = Color(0xFFB9AEFF), fontSize = 11.sp)
+                                        Text(item.folder, color = Color(0xFF8EE7A8), fontSize = 11.sp)
                                     }
                                     Spacer(Modifier.height(7.dp))
                                     Text(item.body, color = Color(0xFFB8C0D8), maxLines = 3, fontSize = 13.sp, lineHeight = 19.sp)
@@ -320,7 +321,7 @@ private fun LyricsKeepApp() {
             FloatingActionButton(
                 onClick = { editing = null; title = ""; body = ""; coverPath = ""; audioPath = ""; folder = if (selectedFolder == "All") "General" else selectedFolder; showEditor = true },
                 modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(22.dp),
-                containerColor = Color(0xFF9184F5), contentColor = Color.White
+                containerColor = Color(0xFF1ED760), contentColor = Color.White
             ) { Text("+", fontSize = 28.sp) }
             } else if (activeTab == 3) {
                 LyricsKeepSettingsScreen(
