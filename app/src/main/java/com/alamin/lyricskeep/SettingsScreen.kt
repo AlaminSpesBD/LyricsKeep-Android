@@ -55,11 +55,11 @@ fun LyricsKeepPlaceholderScreen(title: String, subtitle: String) {
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp).padding(top = 34.dp, bottom = 110.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(Icons.Filled.EditNote, contentDescription = null, tint = KeepGreen, modifier = Modifier.size(54.dp))
         Spacer(Modifier.height(16.dp))
-        Text(title, color = MaterialTheme.colorScheme.onBackground, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+        Text(title, color = Color(0xFF351B2A), fontSize = 25.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Text(subtitle, color = KeepMuted, fontSize = 14.sp)
         Spacer(Modifier.height(18.dp))
-        Surface(color = Color(0xFFFCEEF2), shape = RoundedCornerShape(18.dp), border = BorderStroke(1.dp, KeepBorder) {
+        Surface(color = Color(0xFFFCEEF2), shape = RoundedCornerShape(18.dp), border = BorderStroke(1.dp, KeepBorder)) {
             Text("Coming soon", color = Color(0xFFDB2777), modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp), fontWeight = FontWeight.SemiBold)
         }
     }
