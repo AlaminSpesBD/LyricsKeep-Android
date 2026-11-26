@@ -129,6 +129,8 @@ class LyricsPlaybackService : Service() {
         handler.removeCallbacks(progressTask)
         runCatching { player?.stop(); player?.release() }
         player = null
+        current = 0
+        duration = 0
         session.setPlaybackState(PlaybackStateCompat.Builder().setState(PlaybackStateCompat.STATE_STOPPED, 0, 0f).build())
         broadcastState()
         stopForeground(STOP_FOREGROUND_REMOVE)
