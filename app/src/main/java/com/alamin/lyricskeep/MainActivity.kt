@@ -28,6 +28,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -88,6 +89,8 @@ private fun LyricsKeepApp() {
     var durationMs by remember { mutableIntStateOf(0) }
     var currentMs by remember { mutableIntStateOf(0) }
     var showFolders by remember { mutableStateOf(false) }
+    var showCreateMenu by remember { mutableStateOf(false) }
+    var actionLyric by remember { mutableStateOf<Lyric?>(null) }
     var activeTab by remember { mutableIntStateOf(0) }
     var darkMode by remember { mutableStateOf(prefs.getBoolean("dark_mode", true)) }
     var compactCards by remember { mutableStateOf(prefs.getBoolean("compact_cards", false)) }
@@ -228,8 +231,12 @@ private fun LyricsKeepApp() {
     }
 
     val folderChoices = listOf("All") + folders
+    val childFolders = folders.filter { path ->
+        if (selectedFolder == "All") !path.contains("/")
+        else path.substringBeforeLast("/", "") == selectedFolder
+    }.sorted()
     val visible = lyrics.filter {
-        (selectedFolder == "All" || it.folder == selectedFolder) &&
+        (if (selectedFolder == "All") !it.folder.contains("/") else it.folder == selectedFolder) &&
             (it.title.contains(query, true) || it.body.contains(query, true))
     }
     val pageBg = if (darkMode) Color(0xFF0A0D0B) else Color(0xFFF4F7F4)
@@ -276,13 +283,35 @@ private fun LyricsKeepApp() {
                     TextButton(onClick = { restoreLauncher.launch(arrayOf("application/zip", "application/octet-stream")) }) { Text("Restore") }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("FOLDERS", color = Color(0xFF9AA5C4), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { showFolders = true }) { Text("+ Folder") }
+                    Column(Modifier.weight(1f)) {
+                        Text(if (selectedFolder == "All") "ALL LOCATIONS" else selectedFolder.substringAfterLast("/").uppercase(),
+                            color = Color(0xFF9AAC9F), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
+                        Text(if (selectedFolder == "All") "Browse your library" else "📁 " + selectedFolder,
+                            color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    if (selectedFolder != "All") {
+                        TextButton(onClick = { selectedFolder = selectedFolder.substringBeforeLast("/", "All").ifBlank { "All" } }) {
+                            Text("‹ Parent", color = Color(0xFF8EE7A8))
+                        }
+                    }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    folderChoices.take(5).forEach { name ->
-                        FilterChip(selected = selectedFolder == name, onClick = { selectedFolder = name },
-                            label = { Text(name) })
+                if (childFolders.isNotEmpty()) {
+                    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 190.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(childFolders, key = { it }) { path ->
+                            Surface(Modifier.fillMaxWidth().clickable { selectedFolder = path },
+                                color = Color(0xFF151D18), shape = RoundedCornerShape(16.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2A382E))) {
+                                Row(Modifier.padding(horizontal = 15.dp, vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text("📁", fontSize = 22.sp)
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(path.substringAfterLast("/"), color = Color.White, fontWeight = FontWeight.SemiBold)
+                                        Text(path, color = Color(0xFF91A096), fontSize = 11.sp)
+                                    }
+                                    Text("›", color = Color(0xFF1ED760), fontSize = 24.sp)
+                                }
+                            }
+                        }
                     }
                 }
                 Spacer(Modifier.height(16.dp))
@@ -303,7 +332,7 @@ private fun LyricsKeepApp() {
                     LazyColumn(contentPadding = PaddingValues(bottom = 100.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(visible, key = { it.id }) { item ->
                             Surface(
-                                modifier = Modifier.fillMaxWidth().clickable { preview = item },
+                                modifier = Modifier.fillMaxWidth().combinedClickable(onClick = { preview = item }, onLongClick = { actionLyric = item }),
                                 shape = RoundedCornerShape(20.dp), color = Color(0xCC252D4A),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x334F5C88))
                             ) {
@@ -320,11 +349,22 @@ private fun LyricsKeepApp() {
                     }
                 }
             }
-            FloatingActionButton(
-                onClick = { editing = null; title = ""; body = ""; coverPath = ""; audioPath = ""; folder = if (selectedFolder == "All") "General" else selectedFolder; showEditor = true },
-                modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(22.dp),
-                containerColor = Color(0xFF1ED760), contentColor = Color.White
-            ) { Text("+", fontSize = 28.sp) }
+            Box(Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 22.dp, bottom = 104.dp)) {
+                FloatingActionButton(onClick = { showCreateMenu = true },
+                    containerColor = Color(0xFF1ED760), contentColor = Color(0xFF07140B),
+                    shape = RoundedCornerShape(19.dp)) { Text("+", fontSize = 29.sp, fontWeight = FontWeight.Light) }
+                DropdownMenu(expanded = showCreateMenu, onDismissRequest = { showCreateMenu = false }) {
+                    DropdownMenuItem(text = { Text("Create Folder") }, leadingIcon = { Text("📁") }, onClick = {
+                        parentFolder = if (selectedFolder == "All") "Root" else selectedFolder
+                        newFolder = ""; showCreateMenu = false; showFolders = true
+                    })
+                    DropdownMenuItem(text = { Text("Create Lyrics File") }, leadingIcon = { Text("♫") }, onClick = {
+                        editing = null; title = ""; body = ""; coverPath = ""; audioPath = ""
+                        folder = if (selectedFolder == "All") "General" else selectedFolder
+                        showCreateMenu = false; showEditor = true
+                    })
+                }
+            }
             } else if (activeTab == 3) {
                 LyricsKeepSettingsScreen(
                     darkMode = darkMode, onDarkModeChange = { darkMode = it; prefs.edit().putBoolean("dark_mode", it).apply() },
@@ -433,6 +473,25 @@ private fun LyricsKeepApp() {
                     }
                 }
             }
+        }
+        if (actionLyric != null) {
+            val chosen = actionLyric!!
+            AlertDialog(onDismissRequest = { actionLyric = null }, title = { Text(chosen.title) },
+                text = { Text("Choose an action for this lyrics file.") },
+                confirmButton = {
+                    Row {
+                        TextButton(onClick = {
+                            editing = chosen; title = chosen.title; body = chosen.body; folder = chosen.folder
+                            coverPath = chosen.coverPath; audioPath = chosen.audioPath
+                            actionLyric = null; showEditor = true
+                        }) { Text("Edit", color = Color(0xFF1ED760)) }
+                        TextButton(onClick = { save(lyrics.filterNot { it.id == chosen.id }); actionLyric = null }) {
+                            Text("Delete", color = Color(0xFFFF7185))
+                        }
+                    }
+                },
+                dismissButton = { TextButton(onClick = { preview = chosen; actionLyric = null }) { Text("Open") } }
+            )
         }
         if (showEditor) {
             AlertDialog(
